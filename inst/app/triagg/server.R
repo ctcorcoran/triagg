@@ -7,14 +7,13 @@
 #    http://shiny.rstudio.com/
 #
 
-# library(rhandsontable)
-# library(shinyhelper)
-# library(dplyr)
-# library(ggplot2)
-# library(rstan)
-# #library(readxl)
-# library(openxlsx)
-# library(DT)
+library(rhandsontable)
+library(dplyr)
+library(ggplot2)
+library(rstan)
+library(openxlsx)
+library(DT)
+library(triagg)
 
 
 # Define server logic required to draw a histogram

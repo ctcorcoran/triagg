@@ -1,13 +1,7 @@
-# library(rhandsontable)
-# library(shiny)
-# # library(shinyhelper)
-# #library(shinyBS)
-# library(shinythemes)
-# library(DT)
-
-# srhelp <- function(x, ...){
-#   helper(x, ..., colour="lightgrey")
-# }
+library(rhandsontable)
+library(shiny)
+library(shinythemes)
+library(DT)
 
 shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
                   tags$style(
