@@ -1,4 +1,4 @@
-showhide_tabs <- function(nav_list){
+showhide_tabs <- function(nav_list,tab_names){
   for(tab_to_show in which(nav_list > 0)){
     showTab(inputId='tabs',target=tab_names[tab_to_show])
   }
@@ -14,7 +14,7 @@ color_text <- function(text,color){
   return(text_out)
 }
 
-progress_table <- function(nav_list,kp){
+progress_table <- function(nav_list,kp,tab_names){
   if(is.null(nav_list)){
     return(NULL)
   } else {
@@ -29,13 +29,13 @@ progress_table <- function(nav_list,kp){
   }
 }
 
-full_progress_table <- function(nav_list){
+full_progress_table <- function(nav_list,tab_names){
   if(is.null(nav_list)){
     return(NULL)
   } else {
     out <- list()
     for(kp in names(nav_list)){
-      out[[length(out)+1]] <- progress_table(nav_list,kp)
+      out[[length(out)+1]] <- progress_table(nav_list,kp,tab_names)
     }
     out_df <- do.call('rbind.data.frame',out)
     return(out_df)

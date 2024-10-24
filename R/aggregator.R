@@ -148,10 +148,14 @@ process_agg_results <- function(agg_fit,demo_df,tri_consensus_output){
 
 # Wrapper for pre-processing, fitting, and post-processing aggregator
 run_aggregator <- function(tri_consensus_output,demo_df,parameter_priors){
+  ### Stan Controls:
+  control = list(adapt_delta=0.95,max_treedepth=12)
+  iter=8000
+
   agg_input_data <- aggregator_input_data(tri_consensus_output,demo_df,parameter_priors)
 
   agg_fit <- rstan::sampling(
-    stan_models$aggregator,
+    stanmodels$aggregator,
     data=agg_input_data,
     thin=20,
     iter=iter,

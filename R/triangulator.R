@@ -29,6 +29,10 @@ rsq_lambda <- function(y,sigma,theta,tau){
 # Run triangulator, given a single province
 
 run_triangulator <- function(area_ests,prior_list){
+  ### Stan Controls:
+  control = list(adapt_delta=0.95,max_treedepth=12)
+  iter=8000
+
   #Data for Triangulator
   data <- list(
     N = nrow(area_ests),
@@ -50,7 +54,7 @@ run_triangulator <- function(area_ests,prior_list){
   }
 
   #Fit Model
-  fit <- rstan::sampling(sampling$triangulator,
+  fit <- rstan::sampling(stanmodels$triangulator,
                   data=data,
                   iter=iter,
                   control=control)

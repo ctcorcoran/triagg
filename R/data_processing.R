@@ -1,3 +1,13 @@
+logit <- function(x){
+  log(x/(1-x))
+}
+
+expit <- function(x){
+  1/(1+exp(-x))
+}
+
+trans <- logit
+inv_trans <- expit
 
 process_kp_workbook <- function(df){
   interp_stat <- 'q75'

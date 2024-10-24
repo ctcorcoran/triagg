@@ -11,12 +11,12 @@
 #' @import dplyr
 #' @import ggplot2
 #' @import shiny
+#' @import rhandsontable
 #' @importFrom rstan sampling extract
 #' @importFrom rstantools rstan_config
 #' @importFrom RcppParallel RcppParallelLibs
-#' @importFrom rhandsontable rhandsontable renderRHandsontable hot_to_r
 #' @importFrom shinythemes shinytheme
-#' @importFrom DT datatable renderDT dataTableProxy
+#' @importFrom DT datatable renderDT dataTableProxy replaceData formatStyle styleEqual
 #' @importFrom openxlsx read.xlsx getSheetNames loadWorkbook addWorksheet writeData saveWorkbook
 #'
 #' @references

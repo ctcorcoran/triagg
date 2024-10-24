@@ -19,25 +19,9 @@
 
 # Define server logic required to draw a histogram
 function(input, output, session) {
-  logit <- function(x){
-    log(x/(1-x))
-  }
-
-  expit <- function(x){
-    1/(1+exp(-x))
-  }
-
-  trans <- logit
-  inv_trans <- expit
-
-
   kp_ref_list <- list('MSM'='male','FSW'='female','PWID'='male+female','TGW'='male')
   kp_ref_display_list <- list('MSM'='Male','FSW'='Female','PWID'='Male & Female','TGW'='Male')
   tab_names <- c('KP Data Input','Triangulator Inputs','Triangulator Outputs','Aggregator Inputs','Aggregator Outputs')
-
-  ### Stan Controls:
-  control = list(adapt_delta=0.95,max_treedepth=12)
-  iter=8000
 
   ##########################
   # Define Reactive Values #
@@ -77,7 +61,7 @@ function(input, output, session) {
 
   observeEvent(values[['startup']],{
     #Hide All Tabs to Begin, which will slowly be shown as the user progresses through the app the first time
-    showhide_tabs(c(0,0,0,0,0))
+    showhide_tabs(c(0,0,0,0,0),tab_names)
     showModal(modalDialog(
       title='Upload KP Workbook',
       align='center',
@@ -164,7 +148,7 @@ function(input, output, session) {
       if(values[['nav_list']][[input$kp]][1]==0){
         values[['nav_list']][[input$kp]][1] <- 1
       }
-      showhide_tabs(values[['nav_list']][[input$kp]])
+      showhide_tabs(values[['nav_list']][[input$kp]],tab_names)
     }
   })
 
@@ -204,7 +188,7 @@ function(input, output, session) {
 
   observeEvent(values[['nav_list']],{
     if(input$kp != ''){
-      showhide_tabs(values[['nav_list']][[input$kp]])
+      showhide_tabs(values[['nav_list']][[input$kp]],tab_names)
     }
   })
 
@@ -263,7 +247,7 @@ function(input, output, session) {
 
   # Tweak the progress table to make two smaller ones
   observeEvent(values[['nav_list']],{
-    temp <- full_progress_table(values[['nav_list']])
+    temp <- full_progress_table(values[['nav_list']],tab_names)
     #
     temp_kp_prog_table <- t(temp[input$kp,])
     colnames(temp_kp_prog_table)[1] <- 'Status'
@@ -281,8 +265,8 @@ function(input, output, session) {
   output$kp_progress_table <- DT::renderDT({
     if(!is.null(values[['kp_prog_table']])){
       DT::datatable(values[['kp_prog_table']],options = list(dom = 't',ordering=FALSE),selection='none',class='compact') %>%
-        formatStyle(1:ncol(values[['kp_prog_table']]),
-                    color = styleEqual(c('Incomplete','Invalid','In Progress','Valid','Complete'),
+        DT::formatStyle(1:ncol(values[['kp_prog_table']]),
+                    color = DT::styleEqual(c('Incomplete','Invalid','In Progress','Valid','Complete'),
                                        c('red','red', 'goldenrod', 'green','green')
                                        )
                     )
@@ -292,8 +276,8 @@ function(input, output, session) {
   output$overall_progress_table <- DT::renderDT({
     if(!is.null(values[['overall_prog_table']])){
       DT::datatable(values[['overall_prog_table']],options = list(dom = 't',ordering=FALSE),selection='none',class='compact') %>%
-        formatStyle(1:ncol(values[['overall_prog_table']]),
-                    color = styleEqual(c('Incomplete','Invalid','In Progress','Valid','Complete'),
+        DT::formatStyle(1:ncol(values[['overall_prog_table']]),
+                    color = DT::styleEqual(c('Incomplete','Invalid','In Progress','Valid','Complete'),
                                        c('red','red', 'goldenrod', 'green','green')
                     )
         )
@@ -302,12 +286,12 @@ function(input, output, session) {
 
   kp_progress_proxy <- DT::dataTableProxy('kp_progress_table')
   observe({
-    replaceData(kp_progress_proxy,values[['kp_prog_table']])
+    DT::replaceData(kp_progress_proxy,values[['kp_prog_table']])
   })
 
   overall_progress_proxy <- DT::dataTableProxy('overall_progress_table')
   observe({
-    replaceData(overall_progress_proxy,values[['overall_prog_table']])
+    DT::replaceData(overall_progress_proxy,values[['overall_prog_table']])
   })
 
   ##################
@@ -316,7 +300,7 @@ function(input, output, session) {
 
   observe({
     if (!is.null(input$kp_data_hot)) {
-        kp_df <- rhandsontable::hot_to_r(input$kp_data_hot)
+        kp_df <- hot_to_r(input$kp_data_hot)
         colnames(kp_df)[c(3:9,12,14)] <- c('study_idx','observation_idx','method','year','area_name','province','proportion_estimate','display_CI','confidence')
         kp_df <- kp_df[,!(colnames(kp_df) %in% c('display_CI'))]
       } else {
@@ -329,7 +313,7 @@ function(input, output, session) {
     values[["kp_df"]] <- kp_df
   })
 
-  output$kp_data_hot <- rhandsontable::renderRHandsontable({
+  output$kp_data_hot <- renderRHandsontable({
     kp_df <- values[["kp_df"]]
     values[['kp_change']][['kp_df']] <- FALSE
     if (!is.null(kp_df)){
@@ -379,7 +363,7 @@ function(input, output, session) {
   # Triangulator Prior
   observe({
     if (!is.null(input$tri_priors_hot)) {
-          tri_priors_df <- rhandsontable::hot_to_r(input$tri_priors_hot)
+          tri_priors_df <- hot_to_r(input$tri_priors_hot)
           colnames(tri_priors_df) <- c('province','prior_med','prior_q75')
           # Build in our validation here, since rHandsontable has issues with row validation
           tri_priors_df$prior_q75 <- ifelse(is.na(tri_priors_df$prior_med)|is.na(tri_priors_df$prior_q75),
@@ -414,7 +398,7 @@ function(input, output, session) {
                       selected=tri_priors_select)
   })
 
-  output$tri_priors_hot <- rhandsontable::renderRHandsontable({
+  output$tri_priors_hot <- renderRHandsontable({
     tri_priors_df <- values[['tri_priors_df']]
     if (!is.null(tri_priors_df)){
       rownames(tri_priors_df) <- 1:nrow(tri_priors_df)
@@ -556,7 +540,7 @@ function(input, output, session) {
 
   observe({
     if (!is.null(input$demo_data_hot)) {
-      demo_df <- rhandsontable::hot_to_r(input$demo_data_hot)
+      demo_df <- hot_to_r(input$demo_data_hot)
       demo_df <- demo_df[1:(nrow(demo_df)-1),]
       colnames(demo_df) <- c('province','year','pop','urban_proportion','prop_of_nat_pop')
     } else {
@@ -568,7 +552,7 @@ function(input, output, session) {
     values[["demo_df"]] <- demo_df
   })
 
-  output$demo_data_hot <- rhandsontable::renderRHandsontable({
+  output$demo_data_hot <- renderRHandsontable({
     demo_df <- values[['demo_df']]
     if (!is.null(demo_df)){
       demo_df <- demo_df[demo_df$province!='Total',]
