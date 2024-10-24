@@ -1,12 +1,3 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(rhandsontable)
 library(dplyr)
 library(ggplot2)
@@ -16,7 +7,6 @@ library(DT)
 library(triagg)
 
 
-# Define server logic required to draw a histogram
 function(input, output, session) {
   kp_ref_list <- list('MSM'='male','FSW'='female','PWID'='male+female','TGW'='male')
   kp_ref_display_list <- list('MSM'='Male','FSW'='Female','PWID'='Male & Female','TGW'='Male')
