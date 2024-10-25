@@ -327,7 +327,7 @@ function(input, output, session) {
   # >>> ADVANCE TO TRI INPUTS
 
   observeEvent(input$progress_to_tri,{
-    validity_check <- validate_kp_df(isolate(values[['kp_df']]))
+    validity_check <- triagg:::validate_kp_df(isolate(values[['kp_df']]))
     if(validity_check$valid){
       values[['nav_list']][[input$kp]][2] <- ifelse(all(!is.na(values[['tri_priors_df']])),2,1)
       updateTabsetPanel(inputId='tabs',selected='Triangulator Inputs')
@@ -483,7 +483,7 @@ function(input, output, session) {
                       choices=kp_forest_plot_options)
 
     # Compute the value of T for aggregator:
-    eb <- empirical_bayes(logit(tri_out$full_df$proportion_estimate),
+    eb <- triagg:::empirical_bayes(logit(tri_out$full_df$proportion_estimate),
                           ((logit(tri_out$full_df$proportion_upper)-logit(tri_out$full_df$proportion_lower))/(2*qnorm(0.975)))^2)
     values[['t_value']] <- eb$t
 
