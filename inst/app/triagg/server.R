@@ -50,7 +50,7 @@ function(input, output, session) {
 
   observeEvent(values[['startup']],{
     #Hide All Tabs to Begin, which will slowly be shown as the user progresses through the app the first time
-    showhide_tabs(c(0,0,0,0,0),tab_names)
+    triagg:::showhide_tabs(c(0,0,0,0,0),tab_names)
     showModal(modalDialog(
       title='Upload KP Workbook',
       align='center',
@@ -74,7 +74,7 @@ function(input, output, session) {
                               cols=c(1,3:5,8:14,17:18))
 
     # Process Validation Sheet in to workable format
-    df <- process_kp_workbook(df)
+    df <- triagg:::process_kp_workbook(df)
     df$confidence <- as.integer(NA)
 
     # Assign some session values and navigation lists
@@ -87,7 +87,7 @@ function(input, output, session) {
     values[['full_demo_df']] <- ref_pops[(ref_pops$country==values[['country']])&(ref_pops$year==year),]
 
     # Make KP and Preallocated Output Dataframes
-    dfs_to_save <- generate_output_dataframes(df,isolate(values[['full_demo_df']]),input$upload$datapath)
+    dfs_to_save <- triagg:::generate_output_dataframes(df,isolate(values[['full_demo_df']]),input$upload$datapath)
     values[['triangulator_results']] <- dfs_to_save$triangulator_results
     values[['aggregator_results']] <- dfs_to_save$aggregator_results
     values[['urb_prior_df']] <- dfs_to_save$urb_prior_df
@@ -128,7 +128,7 @@ function(input, output, session) {
       #
       values[["kp_df"]] <- tri_res[tri_res$kp==input$kp&!(tri_res$method %in% c('Prior','Consensus')),]
       values[['demo_df']] <- demo[demo$sex==kp_ref_list[[input$kp]],c('province','year','pop','urban_proportion')]
-      values[['tri_priors_df']] <- tri_prior_results_to_HOT(tri_res,input$kp)
+      values[['tri_priors_df']] <- triagg:::tri_prior_results_to_HOT(tri_res,input$kp)
       #
       updateNumericInput(session,inputId='urb_prior_median',value=urb[urb$stat=='urb_prior_median',input$kp])
       updateNumericInput(session,inputId='urb_prior_q95',value=urb[urb$stat=='urb_prior_q95',input$kp])
@@ -137,7 +137,7 @@ function(input, output, session) {
       if(values[['nav_list']][[input$kp]][1]==0){
         values[['nav_list']][[input$kp]][1] <- 1
       }
-      showhide_tabs(values[['nav_list']][[input$kp]],tab_names)
+      triagg:::showhide_tabs(values[['nav_list']][[input$kp]],tab_names)
     }
   })
 
@@ -177,7 +177,7 @@ function(input, output, session) {
 
   observeEvent(values[['nav_list']],{
     if(input$kp != ''){
-      showhide_tabs(values[['nav_list']][[input$kp]],tab_names)
+      triagg:::showhide_tabs(values[['nav_list']][[input$kp]],tab_names)
     }
   })
 
@@ -236,7 +236,7 @@ function(input, output, session) {
 
   # Tweak the progress table to make two smaller ones
   observeEvent(values[['nav_list']],{
-    temp <- full_progress_table(values[['nav_list']],tab_names)
+    temp <- triagg:::full_progress_table(values[['nav_list']],tab_names)
     #
     temp_kp_prog_table <- t(temp[input$kp,])
     colnames(temp_kp_prog_table)[1] <- 'Status'
@@ -462,7 +462,7 @@ function(input, output, session) {
       return(NULL)
     showModal(modalDialog(title=NULL,align='center',tags$h3('Running Triangulator'),footer=NULL,size='l',easyClose = FALSE))
 
-    tri_out <- triangulate(isolate(values[["kp_df"]]),isolate(values[['tri_priors_df']]))
+    tri_out <- triagg:::triangulate(isolate(values[["kp_df"]]),isolate(values[['tri_priors_df']]))
 
     values[['tri_full_output']] <- tri_out$full_df
     values[['tri_consensus_output']] <- tri_out$consensus_df
@@ -500,7 +500,7 @@ function(input, output, session) {
   # Triangulator Output Plots:
   output$kp_forest_plot <- renderPlot({
     if(!is.null(values[['tri_full_output']]))
-      plot_triangulator_forest(isolate(values[['tri_full_output']]),input$kp_forest_plot_select,input$kp_forest_scale)
+      triagg:::plot_triangulator_forest(isolate(values[['tri_full_output']]),input$kp_forest_plot_select,input$kp_forest_scale)
   })
 
   output$kp_var_unexp <- renderText({
@@ -616,7 +616,7 @@ function(input, output, session) {
     #
     demo_df <- isolate(values[["demo_df"]])
     parameter_priors <- list(alpha=log(input$urb_prior_median),gamma=((log(input$urb_prior_q95)-log(input$urb_prior_median))/qnorm(0.975)),t=values[['t_value']])
-    agg_out <- run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors)
+    agg_out <- triagg:::run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors)
     values[['aggregator_output']] <- agg_out
     #browser()
     values[['aggregator_results']] <- rows_update(values[['aggregator_results']],agg_out,by=c('country','kp','level','urb','province'))
@@ -669,7 +669,7 @@ function(input, output, session) {
   # Aggregator Output Plot
   output$agg_out_plot <- renderPlot({
     if(!is.null(values[['aggregator_output']]))
-      plot_aggregator_forest(isolate(values[['aggregator_output']]),input$agg_out_scale,input$agg_display_select)
+      triagg:::plot_aggregator_forest(isolate(values[['aggregator_output']]),input$agg_out_scale,input$agg_display_select)
   })
 
   ######################
