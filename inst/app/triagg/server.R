@@ -414,8 +414,8 @@ function(input, output, session) {
       tri_priors_df <- values[['tri_priors_df']][values[['tri_priors_df']]$province==input$tri_prior_plot_select,] # isolate(values[['tri_priors_df']])
       x_max <- min(0.1,max(tri_priors_df$prior_med+qnorm(0.975)*(tri_priors_df$prior_q75-tri_priors_df$prior_med)/qnorm(0.75),na.rm = TRUE)) # Clip the plot at 10%, or smaller if the 95th pctle for each is less.
       #
-      med <- trans(tri_priors_df$prior_med)#[tri_priors_df$province==input$tri_prior_plot_select])
-      q75 <- trans(tri_priors_df$prior_q75)#[tri_priors_df$province==input$tri_prior_plot_select])
+      med <- triagg:::trans(tri_priors_df$prior_med)#[tri_priors_df$province==input$tri_prior_plot_select])
+      q75 <- triagg:::trans(tri_priors_df$prior_q75)#[tri_priors_df$province==input$tri_prior_plot_select])
       prior_sd <- (q75 - med) / qnorm(0.75) #.674
       #
       if(prior_sd==0.0){
@@ -423,7 +423,7 @@ function(input, output, session) {
       } else {
         samp <- rnorm(100000, med, prior_sd)
       }
-      samp <- inv_trans(samp[samp <= trans(x_max)])
+      samp <- triagg:::inv_trans(samp[samp <= triagg:::trans(x_max)])
       tri_prior_samp(samp)
       plt <- ggplot() + geom_density(aes(x=samp)) +
         scale_x_continuous(labels = scales::percent,limits=c(0,x_max*1.1)) +
@@ -483,8 +483,8 @@ function(input, output, session) {
                       choices=kp_forest_plot_options)
 
     # Compute the value of T for aggregator:
-    eb <- triagg:::empirical_bayes(logit(tri_out$full_df$proportion_estimate),
-                          ((logit(tri_out$full_df$proportion_upper)-logit(tri_out$full_df$proportion_lower))/(2*qnorm(0.975)))^2)
+    eb <- triagg:::empirical_bayes(triagg:::logit(tri_out$full_df$proportion_estimate),
+                          ((triagg:::logit(tri_out$full_df$proportion_upper)-triagg:::logit(tri_out$full_df$proportion_lower))/(2*qnorm(0.975)))^2)
     values[['t_value']] <- eb$t
 
     removeModal()
