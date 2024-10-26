@@ -7,7 +7,7 @@ You can install the development version of triagg from [GitHub](https://github.c
 devtools::install_github("ctcorcoran/triagg")
 ```
 
-## Application
+## Launch
 
 Launch the Shiny application with:
 
