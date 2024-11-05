@@ -26,7 +26,7 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
       #
       tags$h4('Overall Progress'),
       wellPanel(DT::DTOutput('overall_progress_table')),
-      actionButton('download_button','Download Results',width='100%',style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
+      actionButton('download_button','Download Results',width='100%',style="color: #fff; background-color: #0c8509; border-color: #b2ffb0") # #fc5151; border-color: #ffb5b5")
     )),
     mainPanel(width=9,
   tabsetPanel(
@@ -43,7 +43,7 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              actionButton('show_full_kp_instructions',"Full Instructions")
       )),
       column(2,
-             actionButton('progress_to_tri',label='Triangulator Inputs >',disabled=TRUE)
+             actionButton('progress_to_tri',label='Triangulator Inputs >',disabled=TRUE,style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       br(),
       column(12,br(),
@@ -61,7 +61,7 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              htmlOutput("tri_instructions"),
              actionButton('show_full_tri_instructions',"Full Instructions"))),
       column(2,
-             actionButton("run_tri","Run Triangulator",disabled=TRUE)
+             actionButton("run_tri","Run Triangulator",disabled=TRUE,style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       column(5,
         tags$h3('KP Proportion Baseline Estimate'),
@@ -89,7 +89,7 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              htmlOutput("tri_out_instructions")
              )),
       column(2,
-             actionButton('progress_to_agg',label='Aggregator Inputs >',disabled=FALSE)
+             actionButton('progress_to_agg',label='Aggregator Inputs >',disabled=FALSE,style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       column(5,
              tags$h3('KP Proportion Consensus Estimates'),
@@ -116,7 +116,7 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              actionButton('show_full_agg_instructions',"Full Instructions")
              )),
       column(2,
-             actionButton("run_agg","Run Aggregator")
+             actionButton("run_agg","Run Aggregator",style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       column(6,
              tags$h3('Demographic Data'),

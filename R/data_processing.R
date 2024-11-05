@@ -9,11 +9,21 @@ expit <- function(x){
 trans <- logit
 inv_trans <- expit
 
-process_kp_workbook <- function(df){
+process_kp_workbook <- function(df,lang){
   interp_stat <- 'q75'
 
-  df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
-  df <- df[,!(colnames(df) %in% c('Indicator'))]
+  # df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
+  # df <- df[,!(colnames(df) %in% c('Indicator'))]
+  browser()
+
+  if(lang == "English") {
+    df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
+    df <- df[,!(colnames(df) %in% c('Indicator'))]
+  } else {
+    df <- df[(df$Indicateur=='Estimation de la taille de la population')&!(df$Méthode %in% c('PLACE/Cartographie','Médiane / Delphi / Consensus')),]
+    df <- df[,!(colnames(df) %in% c('Indicateur'))]
+  }
+
   colnames(df) <- c('country','method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx')
 
   df <- df %>% mutate_at(vars('year','study_idx','observation_idx'),as.character) %>% mutate_at(vars('proportion_estimate','proportion_lower','proportion_upper'),function(x){suppressWarnings(as.numeric(x))})

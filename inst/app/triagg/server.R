@@ -57,6 +57,7 @@ function(input, output, session) {
       easyClose=FALSE,
       footer=NULL,
       size='l',
+      selectInput('language_selector','Language:',choice=c('English','French'),selected='English'),
       fileInput("upload", "Upload KP Workbook",accept=c('.xlsx')),
       textOutput("uploaded")
     ))
@@ -74,7 +75,7 @@ function(input, output, session) {
                               cols=c(1,3:5,8:14,17:18))
 
     # Process Validation Sheet in to workable format
-    df <- triagg:::process_kp_workbook(df)
+    df <- triagg:::process_kp_workbook(df,input$language_selector)
     df$confidence <- as.integer(NA)
 
     # Assign some session values and navigation lists
