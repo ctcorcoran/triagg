@@ -167,6 +167,10 @@ function(input, output, session) {
           openxlsx::writeData(wb,sheet='aggregator_input',isolate(values[['urb_prior_df']]),startRow=1)
           openxlsx::writeData(wb,sheet='aggregator_input',isolate(values[['full_demo_df']]),startRow=4)
           #
+          for(sheet in c('triangulator_confidence','aggregator_output','aggregator_input')){
+            openxlsx::sheetVisibility(wb)[sheet] <- 'hidden'
+          }
+          #
           openxlsx::saveWorkbook(wb,file,overwrite=TRUE)
           removeModal()
         }
@@ -359,6 +363,7 @@ function(input, output, session) {
           tri_priors_df$prior_q75 <- ifelse(is.na(tri_priors_df$prior_med)|is.na(tri_priors_df$prior_q75),
                                             tri_priors_df$prior_q75,
                                             pmax(tri_priors_df$prior_med,tri_priors_df$prior_q75,na.rm=TRUE))
+          tri_priors_df[,c('prior_med','prior_q75')] <- tri_priors_df[,c('prior_med','prior_q75')]/100
           tri_priors_plot_options <- sort(tri_priors_df$province[which(!is.na(tri_priors_df$prior_med)&!is.na(tri_priors_df$prior_q75))])
       } else {
         if (is.null(values[["tri_priors_df"]])){
@@ -392,16 +397,17 @@ function(input, output, session) {
     tri_priors_df <- values[['tri_priors_df']]
     if (!is.null(tri_priors_df)){
       rownames(tri_priors_df) <- 1:nrow(tri_priors_df)
-      colnames(tri_priors_df) <- c('Province','Expected Value - Median','Expected Value - 75th Percentile')
+      colnames(tri_priors_df) <- c('Province','Expected Value - Median (%)','Expected Value - 75th Percentile (%)')
+      tri_priors_df[,c('Baseline - Median (%)','Baseline - 75th Percentile (%)')] <- 100*tri_priors_df[,c('Baseline - Median (%)','Baseline - 75th Percentile (%)')]
       rhandsontable(
         tri_priors_df,
         useTypes = TRUE,
         readOnly = FALSE,
       ) %>%
         hot_col('Province',readOnly = TRUE)%>%
-        hot_validate_numeric(cols=c('Expected Value - Median','Expected Value - 75th Percentile'),min=0.0,max=1.0)%>%
-        hot_col('Expected Value - Median',format='0.000')%>%
-        hot_col('Expected Value - 75th Percentile',format='0.000')
+        hot_validate_numeric(cols=c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)'),min=0.0,max=100.0)%>%
+        hot_col('Expected Value - Median (%)',format='0.0')%>%
+        hot_col('Expected Value - 75th Percentile (%)',format='0.0')
     } else {
       NULL
     }
@@ -558,14 +564,14 @@ function(input, output, session) {
       rhandsontable(
         demo_df,
         useTypes = TRUE,
-        readOnly = FALSE,
+        readOnly = TRUE, #FALSE,
       ) %>%
-        hot_col('Province',readOnly = TRUE) %>%
-        hot_col('Year',readOnly = TRUE) %>%
+        hot_col('Province') %>%   #,readOnly = TRUE) %>%
+        hot_col('Year') %>%   #,readOnly = TRUE) %>%
         hot_col('Population',format='0,0') %>%
         hot_col('Percent Urban',format='0.0%') %>%
-        hot_col('Percent of National Pop.',format='0.0%',readOnly = TRUE) %>%
-        hot_row(nrow(demo_df),readOnly = TRUE)
+        hot_col('Percent of National Pop.',format='0.0%') %>%   #,readOnly = TRUE) %>%
+        hot_row(nrow(demo_df))  #,readOnly = TRUE)
     }
   })
 
