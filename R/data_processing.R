@@ -14,7 +14,6 @@ process_kp_workbook <- function(df,lang){
 
   # df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
   # df <- df[,!(colnames(df) %in% c('Indicator'))]
-  browser()
 
   if(lang == "English") {
     df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
