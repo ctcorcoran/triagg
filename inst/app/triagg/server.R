@@ -392,16 +392,16 @@ function(input, output, session) {
     tri_priors_df <- values[['tri_priors_df']]
     if (!is.null(tri_priors_df)){
       rownames(tri_priors_df) <- 1:nrow(tri_priors_df)
-      colnames(tri_priors_df) <- c('Province','Baseline - Median','Baseline - 75th Percentile')
+      colnames(tri_priors_df) <- c('Province','Expected Value - Median','Expected Value - 75th Percentile')
       rhandsontable(
         tri_priors_df,
         useTypes = TRUE,
         readOnly = FALSE,
       ) %>%
         hot_col('Province',readOnly = TRUE)%>%
-        hot_validate_numeric(cols=c('Baseline - Median','Baseline - 75th Percentile'),min=0.0,max=1.0)%>%
-        hot_col('Baseline - Median',format='0.000')%>%
-        hot_col('Baseline - 75th Percentile',format='0.000')
+        hot_validate_numeric(cols=c('Expected Value - Median','Expected Value - 75th Percentile'),min=0.0,max=1.0)%>%
+        hot_col('Expected Value - Median',format='0.000')%>%
+        hot_col('Expected Value - 75th Percentile',format='0.000')
     } else {
       NULL
     }
@@ -736,17 +736,17 @@ function(input, output, session) {
     For each province below, pose the following questions to your team to complete the table:
     <ul>
     <li>Ignoring the estimates from the previous tab, <b>what is your best guess for the true key population proportion?</b>
-    Enter this value in the "Baseline - Median" column.</li>
+    Enter this value in the "Expected Value - Median" column.</li>
     <li>We are uncertain about the true key population proportion - it may be higher than our best guess, it may be lower.
     <b>Choose a value for which you think there is a 25% chance the true proportion is higher and a 75% chance the true proportion is lower.</b>
-    Enter this value in the "Baseline - 75th Percentile" column.</li>
+    Enter this value in the "Expected Value - 75th Percentile" column.</li>
     </ul>
     '
   })
 
   output$full_tri_instructions <- renderText({'
     <div style="max-width:600px; word-wrap:break-word;">
-    The information about the "baseline estimate" entered here provides the model with information about <b>prior beliefs</b>, to use the language of Bayesian statistics.
+    The information about the "Expected Value estimate" entered here provides the model with information about <b>prior beliefs</b>, to use the language of Bayesian statistics.
     This prior information represents the current understanding of the quantity of interest and its uncertainty absent the empirical estimates included in the consensus process.
     As much as is possible, experts and stakeholders should ignore the information gained from the empirical estimates that are being used when constructing a prior.
     <br>
@@ -777,7 +777,7 @@ function(input, output, session) {
 
   observeEvent(input$show_full_tri_instructions,{
     showModal(modalDialog(
-      title='Triangulator Baseline (Prior Information) Instructions',
+      title='Triangulator Expected Value (Prior Information) Instructions',
       easyClose=TRUE,
       htmlOutput('full_tri_instructions')
     ))
@@ -786,7 +786,7 @@ function(input, output, session) {
 
   # Triangulator Outputs
   output$tri_out_instructions <- renderText({'
-  For each province below, examine the table and forest plots of the baseline estimates (priors), the study estimates (and their confidence-scaled uncertainity), and the consensus estimate outputs.
+  For each province below, examine the table and forest plots of the Expected Value estimates (priors), the study estimates (and their confidence-scaled uncertainity), and the consensus estimate outputs.
   If the results for each province seem reasonable, press the "Aggregator Inputs" button to proceed to the Aggregator model to begin producing a national consensus estimate.
   '
   })
@@ -811,7 +811,7 @@ function(input, output, session) {
     As well, for each province, verify that the "urban percentage" (the percentage of the population in the province that lives in urban areas) is reasonable, and make adjustments if necessary.
     <br>
     <br>
-    For the rural:urban ratio (the estimated ratio of key population size in rural areas to key population size in urban areas), elicitation of the median and 95th percentile can be done in a similar manner to the Triangulator baseline estimates.
+    For the rural:urban ratio (the estimated ratio of key population size in rural areas to key population size in urban areas), elicitation of the median and 95th percentile can be done in a similar manner to the Triangulator Expected Value estimates.
     For the median value, pose the question <b> "What is your best guess for the ratio between rural key population sizes and urban key population sizes?" </b> to each expert in the group. Record each value and then open a discussion two synthesize these into a single value for the whole group.
     <br>
     <br>

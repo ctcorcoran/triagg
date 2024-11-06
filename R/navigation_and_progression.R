@@ -43,6 +43,6 @@ full_progress_table <- function(nav_list,tab_names){
 }
 
 validate_kp_df <- function(kp_df){
-  inds <- which(!(kp_df$proportion_upper >= kp_df$proportion_estimate)|!(kp_df$proportion_lower <= kp_df$proportion_estimate)|!(kp_df$proportion_upper >= kp_df$proportion_lower))
+  inds <- which(!(kp_df$proportion_upper > kp_df$proportion_estimate)|!(kp_df$proportion_lower < kp_df$proportion_estimate)|!(kp_df$proportion_upper > kp_df$proportion_lower))
   return(list('valid'=ifelse(length(inds)==0,TRUE,FALSE),'invalid_rows'=kp_df[inds,]))
 }

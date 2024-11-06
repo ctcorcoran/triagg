@@ -17,6 +17,9 @@ plot_triangulator_forest <- function(triangulator_full_output,province,plot_scal
                                      levels=c('Consensus',unique(forest_df$display_name[!(forest_df$display_name %in% c('Consensus','Prior'))]),'Prior'))
   }
 
+  # Change the display name of 'Prior' to something more user-friendly
+  levels(forest_df$display_name)[which(levels(forest_df$display_name)=='Prior')] <- 'Expected Value'
+
   # Compute Confidence-Scaled Limits
   forest_df$CI_symmetric <- ifelse(abs((forest_df$proportion_upper-forest_df$proportion_estimate)/(forest_df$proportion_estimate-forest_df$proportion_lower)-1)<0.05,TRUE,FALSE)
   forest_df$conf_lower <- ifelse(forest_df$CI_symmetric,
