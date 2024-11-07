@@ -12,19 +12,31 @@ inv_trans <- expit
 process_kp_workbook <- function(df,lang){
   interp_stat <- 'q75'
 
-  # df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
-  # df <- df[,!(colnames(df) %in% c('Indicator'))]
+  colnames(df) <- c('country', "indicator", 'method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx', "method_rating", "method_issue", "validation_issue")
 
   if(lang == "English") {
-    df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
-    df <- df[,!(colnames(df) %in% c('Indicator'))]
-  } else {
-    df <- df[(df$Indicateur=='Estimation de la taille de la population')&!(df$Méthode %in% c('PLACE/Cartographie','Médiane / Delphi / Consensus')),]
-    df <- df[,!(colnames(df) %in% c('Indicateur'))]
-    df$`Population clé'` <- stringr::str_replace_all(df$`Population clé'`,c('HSM'='MSM','PS'='FSW','TGF'='TGW','CDI','PWID'))
-  }
+    df <- df %>%
+      filter(indicator == "Population size estimate",
+             method_issue == "No",
+             validation_issue == "No",
+             method_rating == "Empirical method") %>%
+      select(-indicator)
 
-  colnames(df) <- c('country','method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx')
+  } else {
+    df <- df %>%
+      filter(indicator == "Estimation de la taille de la population",
+             method_issue == "Non",
+             validation_issue == "Non",
+             method_rating == "Méthode empirique") %>%
+      select(-indicator) %>%
+      mutate(kp = recode(kp,
+                         'HSH'='MSM',
+                         'PS'='FSW',
+                         'TGF'='TGW',
+                         'CDI'='PWID'
+                         )
+             )
+  }
 
   df <- df %>% mutate_at(vars('year','study_idx','observation_idx'),as.character) %>% mutate_at(vars('proportion_estimate','proportion_lower','proportion_upper'),function(x){suppressWarnings(as.numeric(x))})
 
@@ -40,7 +52,8 @@ process_kp_workbook <- function(df,lang){
   #df$count_estimate <- as.integer(df$count_estimate)
 
   # Reorder, drop count?
-  df <- df[,c(3,2,11:12,1,6,4:5,9,8,10,13)] #c(11,12,1:10,13,14)]
+  # df <- df[,c(3,2,11:12,1,6,4:5,9,8,10,13)] #c(11,12,1:10,13,14)]
+  df <- select(df, country, kp, study_idx, observation_idx, method, year, area_name, province, proportion_estimate, proportion_lower, proportion_upper, SE_interpolated)
 
   return(df)
 }
