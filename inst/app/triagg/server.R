@@ -8,8 +8,8 @@ library(triagg)
 
 
 function(input, output, session) {
-  kp_ref_list <- list('MSM'='male','FSW'='female','PWID'='male+female','TGW'='male')
-  kp_ref_display_list <- list('MSM'='Male','FSW'='Female','PWID'='Male & Female','TGW'='Male')
+  kp_ref_list <- list('MSM'='male','FSW'='female','PWID'='male','TGW'='female')
+  kp_ref_display_list <- list('MSM'='Male','FSW'='Female','PWID'='Male','TGW'='Female')
   tab_names <- c('KP Data Input','Triangulator Inputs','Triangulator Outputs','Aggregator Inputs','Aggregator Outputs')
 
   ##########################
