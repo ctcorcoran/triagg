@@ -72,7 +72,7 @@ function(input, output, session) {
                               sheet='Validation',
                               startRow=15,
                               colNames=TRUE,
-                              cols=c(1,3:5,8:14,17:18))
+                              cols=c(1,3:5,8:14,17:18,19,21,22))
 
     # Process Validation Sheet in to workable format
     df <- triagg:::process_kp_workbook(df,input$language_selector)
