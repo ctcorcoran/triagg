@@ -12,23 +12,31 @@ inv_trans <- expit
 process_kp_workbook <- function(df,lang){
   interp_stat <- 'q75'
 
-  # df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
-  # df <- df[,!(colnames(df) %in% c('Indicator'))]
+  colnames(df) <- c('country', "indicator", 'method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx', "method_rating", "method_issue", "validation_issue")
 
   if(lang == "English") {
-    df <- df[(df$Indicator=='Population size estimate'),]
-    df <- df[,!(colnames(df) %in% c('Indicator'))]
+    df <- df %>%
+      filter(indicator == "Population size estimate",
+             method_issue == "No",
+             validation_issue == "No",
+             method_rating == "Empirical method") %>%
+      select(-indicator)
+
   } else {
-    df <- df[(df$Indicateur=='Estimation de la taille de la population'),]
-    df <- df[,!(colnames(df) %in% c('Indicateur'))]
-    df$`Population clé'` <- stringr::str_replace_all(df$`Population clé'`,c('HSH'='MSM','PS'='FSW','TGF'='TGW','CDI'='PWID'))
+    df <- df %>%
+      filter(indicator == "Estimation de la taille de la population",
+             method_issue == "Non",
+             validation_issue == "Non",
+             method_rating == "Méthode empirique") %>%
+      select(-indicator) %>%
+      mutate(kp = recode(kp,
+                         'HSH'='MSM',
+                         'PS'='FSW',
+                         'TGF'='TGW',
+                         'CDI'='PWID'
+                         )
+             )
   }
-
-  colnames(df) <- c('country','method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx', "method_rating", "method_issue", "validation_issue")
-
-  df <- df %>% filter(method_issue %in% c("No", "Non"),
-                      validation_issue %in% c("No", "Non"),
-                      method_rating %in% c("Empirical method", "Méthode empirique"))
 
   df <- df %>% mutate_at(vars('year','study_idx','observation_idx'),as.character) %>% mutate_at(vars('proportion_estimate','proportion_lower','proportion_upper'),function(x){suppressWarnings(as.numeric(x))})
 
