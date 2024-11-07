@@ -16,15 +16,19 @@ process_kp_workbook <- function(df,lang){
   # df <- df[,!(colnames(df) %in% c('Indicator'))]
 
   if(lang == "English") {
-    df <- df[(df$Indicator=='Population size estimate')&!(df$Method %in% c('PLACE/Mapping','Median / Delphi / Consensus')),]
+    df <- df[(df$Indicator=='Population size estimate'),]
     df <- df[,!(colnames(df) %in% c('Indicator'))]
   } else {
-    df <- df[(df$Indicateur=='Estimation de la taille de la population')&!(df$Méthode %in% c('PLACE/Cartographie','Médiane / Delphi / Consensus')),]
+    df <- df[(df$Indicateur=='Estimation de la taille de la population'),]
     df <- df[,!(colnames(df) %in% c('Indicateur'))]
     df$`Population clé'` <- stringr::str_replace_all(df$`Population clé'`,c('HSM'='MSM','PS'='FSW','TGF'='TGW','CDI'='PWID'))
   }
 
-  colnames(df) <- c('country','method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx')
+  colnames(df) <- c('country','method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx', "method_rating", "method_issue", "validation_issue")
+
+  df <- df %>% filter(method_issue %in% c("No", "Non"),
+                      validation_issue %in% c("No", "Non"),
+                      method_rating %in% c("Empirical method", "Méthode empirique"))
 
   df <- df %>% mutate_at(vars('year','study_idx','observation_idx'),as.character) %>% mutate_at(vars('proportion_estimate','proportion_lower','proportion_upper'),function(x){suppressWarnings(as.numeric(x))})
 
