@@ -129,20 +129,28 @@ process_agg_results <- function(agg_fit,demo_df,tri_consensus_output){
   agg_output_df <- do.call('rbind.data.frame',agg_output_list)
   colnames(agg_output_df) <- c('country','kp','province','level','urb','proportion_estimate','proportion_lower','proportion_upper','has_ests')
   #
-  agg_output_df <- merge(agg_output_df,demo_df[,c('province','prop_of_nat_pop','urban_proportion')],by='province')
+  agg_output_df <- merge(agg_output_df,demo_df[,c('province','prop_of_nat_pop','urban_proportion','pop')],by='province')
   agg_output_df <- agg_output_df[,c(2:3,1,4:ncol(agg_output_df))]
+  agg_output_df$pop[agg_output_df$urb=='Urban'] <- agg_output_df$pop[agg_output_df$urb=='Urban'] * agg_output_df$urban_proportion[agg_output_df$urb=='Urban']
+  agg_output_df$pop[agg_output_df$urb=='Rural'] <- agg_output_df$pop[agg_output_df$urb=='Rural'] * (1 - agg_output_df$urban_proportion[agg_output_df$urb=='Rural'])
   #
   country_prop <- as.numeric(quantile(rstan::extract(agg_fit)$country_proportion,probs=c(0.025,0.5,0.975)))
   country_prop_urban <- as.numeric(quantile(rstan::extract(agg_fit)$country_proportion_urban,probs=c(0.025,0.5,0.975)))
   country_prop_rural <- as.numeric(quantile(rstan::extract(agg_fit)$country_proportion_rural,probs=c(0.025,0.5,0.975)))
   #
   country_row_u <- list(country,kp,'National','National','Urban',country_prop_urban[2],country_prop_urban[1],country_prop_urban[3],2,1,
-                        sum(agg_output_df$prop_of_nat_pop[agg_output_df$urb=='Urban']*agg_output_df$urban_proportion[agg_output_df$urb=='Urban']))
+                        sum(agg_output_df$prop_of_nat_pop[agg_output_df$urb=='Urban']*agg_output_df$urban_proportion[agg_output_df$urb=='Urban']),sum(agg_output_df$pop[agg_output_df$urb=='Urban']))
   country_row_r <- list(country,kp,'National','National','Rural',country_prop_rural[2],country_prop_rural[1],country_prop_rural[3],2,1,
-                        sum(agg_output_df$prop_of_nat_pop[agg_output_df$urb=='Rural']*agg_output_df$urban_proportion[agg_output_df$urb=='Rural']))
+                        sum(agg_output_df$prop_of_nat_pop[agg_output_df$urb=='Rural']*agg_output_df$urban_proportion[agg_output_df$urb=='Rural']),sum(agg_output_df$pop[agg_output_df$urb=='Rural']))
   country_row_t <- list(country,kp,'National','National','Total',country_prop[2],country_prop[1],country_prop[3],2,1,
-                        sum(agg_output_df$prop_of_nat_pop[agg_output_df$urb=='Total']*agg_output_df$urban_proportion[agg_output_df$urb=='Total']))
+                        sum(agg_output_df$prop_of_nat_pop[agg_output_df$urb=='Total']*agg_output_df$urban_proportion[agg_output_df$urb=='Total']),sum(agg_output_df$pop[agg_output_df$urb=='Total']))
   agg_output_df <- rbind.data.frame(agg_output_df,country_row_u,country_row_r,country_row_t)
+  #
+  agg_output_df$count_estimate <- agg_output_df$proportion_estimate * agg_output_df$pop
+  agg_output_df$count_lower <- agg_output_df$proportion_lower * agg_output_df$pop
+  agg_output_df$count_upper <- agg_output_df$proportion_upper * agg_output_df$pop
+  agg_output_df$source <- "aggregator"
+  #
   return(agg_output_df)
 }
 

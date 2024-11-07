@@ -61,8 +61,9 @@ generate_output_dataframes <- function(full_kp_df,full_demo_df,filename){
   }
 
   agg_full_out <- do.call('rbind.data.frame',agg_list) %>%
-    mutate(!!!setNames(rep(NA,6),c("proportion_estimate","proportion_lower","proportion_upper","has_ests","prop_of_nat_pop","urban_proportion"))) %>%
-    mutate_at(vars(proportion_estimate,proportion_lower,proportion_upper,has_ests,prop_of_nat_pop,urban_proportion),as.numeric)
+    mutate(!!!setNames(rep(NA,11),c("proportion_estimate","proportion_lower","proportion_upper","has_ests","prop_of_nat_pop","urban_proportion","pop","count_estimate","count_lower","count_upper","source"))) %>%
+    mutate_at(vars(proportion_estimate,proportion_lower,proportion_upper,has_ests,prop_of_nat_pop,urban_proportion,pop,count_estimate,count_lower,count_upper),as.numeric) %>%
+    mutate_at(vars(source),as.character)
 
   tri_full_out <- tri_full_out %>% mutate_at(vars(proportion_estimate,proportion_lower,proportion_upper),as.numeric)
 
