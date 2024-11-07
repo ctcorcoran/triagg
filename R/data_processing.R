@@ -21,7 +21,7 @@ process_kp_workbook <- function(df,lang){
   } else {
     df <- df[(df$Indicateur=='Estimation de la taille de la population'),]
     df <- df[,!(colnames(df) %in% c('Indicateur'))]
-    df$`Population clé'` <- stringr::str_replace_all(df$`Population clé'`,c('HSM'='MSM','PS'='FSW','TGF'='TGW','CDI'='PWID'))
+    df$`Population clé'` <- stringr::str_replace_all(df$`Population clé'`,c('HSH'='MSM','PS'='FSW','TGF'='TGW','CDI'='PWID'))
   }
 
   colnames(df) <- c('country','method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx', "method_rating", "method_issue", "validation_issue")
