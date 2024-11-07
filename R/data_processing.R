@@ -52,7 +52,8 @@ process_kp_workbook <- function(df,lang){
   #df$count_estimate <- as.integer(df$count_estimate)
 
   # Reorder, drop count?
-  df <- df[,c(3,2,11:12,1,6,4:5,9,8,10,13)] #c(11,12,1:10,13,14)]
+  # df <- df[,c(3,2,11:12,1,6,4:5,9,8,10,13)] #c(11,12,1:10,13,14)]
+  df <- select(df, country, kp, study_idx, observation_idx, method, year, area_name, province, proportion_estimate, proportion_lower, proportion_upper, SE_interpolated)
 
   return(df)
 }
