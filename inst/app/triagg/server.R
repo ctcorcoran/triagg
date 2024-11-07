@@ -401,7 +401,7 @@ function(input, output, session) {
     if (!is.null(tri_priors_df)){
       rownames(tri_priors_df) <- 1:nrow(tri_priors_df)
       colnames(tri_priors_df) <- c('Province','Expected Value - Median (%)','Expected Value - 75th Percentile (%)')
-      tri_priors_df[,c('Baseline - Median (%)','Baseline - 75th Percentile (%)')] <- 100*tri_priors_df[,c('Baseline - Median (%)','Baseline - 75th Percentile (%)')]
+      tri_priors_df[,c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)')] <- 100*tri_priors_df[,c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)')]
       rhandsontable(
         tri_priors_df,
         useTypes = TRUE,
