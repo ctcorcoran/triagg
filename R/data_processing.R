@@ -34,7 +34,10 @@ process_kp_workbook <- function(df,lang){
                          'PS'='FSW',
                          'TGF'='TGW',
                          'CDI'='PWID'
-                         )
+                         ),
+             method = recode(method,
+                             'Multiplicateur d\'objets/événements' = 'Event multiplier'
+                             )
              )
   }
 

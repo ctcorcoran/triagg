@@ -82,7 +82,8 @@ function(input, output, session) {
     values[['country']] <- unique(df$country)
     kp_list <- unique(df$kp)
     #
-    values[["nav_list"]] <- setNames(append(list(c(1,0,0,0,0)),rep(list(c(0,0,0,0,0)),length(kp_list)-1)),kp_list)
+    updateSelectInput(session,inputId='kp',choices=kp_list)
+    values[["nav_list"]] <- setNames(append(list(c(0,0,0,0,0)),rep(list(c(0,0,0,0,0)),length(kp_list)-1)),kp_list)
 
     # Make Demography Dataframes
     values[['full_demo_df']] <- ref_pops[(ref_pops$country==values[['country']])&(ref_pops$year==year),]
@@ -96,7 +97,6 @@ function(input, output, session) {
 
     # Last Steps
     removeModal()
-    updateSelectInput(session,inputId='kp',choices=kp_list)
     showTab(inputId='tabs',target='KP Data Input')
     df
   })
@@ -121,7 +121,6 @@ function(input, output, session) {
   ## SELECT KP
   observeEvent(input$kp,{
     if(input$kp != ''){
-      #values[['kp_change']] <- lapply(values[['kp_change']],function(x){TRUE})
       tri_res <- isolate(values[['triangulator_results']])
       agg_res <- isolate(values[['aggregator_results']])
       demo <- isolate(values[['full_demo_df']])
@@ -420,7 +419,6 @@ function(input, output, session) {
 
   output$tri_prior_plot <- renderPlot({
     if(input$tri_prior_plot_select != ''){
-      #browser()
       tri_priors_df <- values[['tri_priors_df']][values[['tri_priors_df']]$province==input$tri_prior_plot_select,] # isolate(values[['tri_priors_df']])
       x_max <- min(0.1,max(tri_priors_df$prior_med+qnorm(0.975)*(tri_priors_df$prior_q75-tri_priors_df$prior_med)/qnorm(0.75),na.rm = TRUE)) # Clip the plot at 10%, or smaller if the 95th pctle for each is less.
       #
@@ -471,7 +469,6 @@ function(input, output, session) {
     if(is.null(values[["kp_df"]]) || !all(!is.na(values[['tri_priors_df']])))
       return(NULL)
     showModal(modalDialog(title=NULL,align='center',tags$h3('Running Triangulator'),footer=NULL,size='l',easyClose = FALSE))
-
     tri_out <- triagg:::triangulate(isolate(values[["kp_df"]]),isolate(values[['tri_priors_df']]))
 
     values[['tri_full_output']] <- tri_out$full_df
@@ -628,13 +625,11 @@ function(input, output, session) {
     parameter_priors <- list(alpha=log(input$urb_prior_median),gamma=((log(input$urb_prior_q95)-log(input$urb_prior_median))/qnorm(0.975)),t=values[['t_value']])
     agg_out <- triagg:::run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors)
     values[['aggregator_output']] <- agg_out
-    #browser()
     values[['aggregator_results']] <- rows_update(values[['aggregator_results']],agg_out,by=c('country','kp','level','urb','province'))
     values[['urb_prior_df']][,input$kp] <- c(input$urb_prior_median,input$urb_prior_q95)
     #
     demo_df$sex <- kp_ref_list[[input$kp]]
     demo_cols <- c('province','year','sex','pop','urban_proportion')
-    #browser()
     values[['full_demo_df']][,demo_cols] <- values[['full_demo_df']][,demo_cols] %>%
       rows_update(demo_df[,demo_cols],by=c('province','year','sex'))
     #
