@@ -340,7 +340,7 @@ function(input, output, session) {
       values[['nav_list']][[input$kp]][2] <- ifelse(all(!is.na(values[['tri_priors_df']])),2,1)
       updateTabsetPanel(inputId='tabs',selected='Triangulator Inputs')
     } else {
-      output$validity_table <- shiny::renderDataTable({validity_check$invalid_rows[,1:11] %>% datatable(options = list(dom = 't',ordering=FALSE)) %>% formatRound(columns=c('proportion_lower','proportion_estimate','proportion_upper'),digits=3)})
+      output$validity_table <- DT::renderDT({validity_check$invalid_rows[,1:11] %>% datatable(options = list(dom = 't',ordering=FALSE)) %>% formatRound(columns=c('proportion_lower','proportion_estimate','proportion_upper'),digits=3)})
       showModal(modalDialog(
         title='KP Data Validity Error',
         align='center',
