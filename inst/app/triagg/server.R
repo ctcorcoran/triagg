@@ -162,6 +162,9 @@ function(input, output, session) {
               openxlsx::addWorksheet(wb,name)
             }
           }
+          # Write any changes made to kp_df and tri_priors_df
+          values[['triangulator_results']] <- rows_update(values[['triangulator_results']],triagg:::write_triangulator_inputs(isolate(values[['kp_df']]),isolate(values[['tri_priors_df']])),
+                                                          by=c('country','kp','study_idx','observation_idx','method','year','area_name','province'))
           openxlsx::writeData(wb,sheet='triangulator_confidence',isolate(values[['triangulator_results']]))
           openxlsx::writeData(wb,sheet='aggregator_output',isolate(values[['aggregator_results']]))
           openxlsx::writeData(wb,sheet='aggregator_input',isolate(values[['urb_prior_df']]),startRow=1)

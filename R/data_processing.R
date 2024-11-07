@@ -120,6 +120,32 @@ generate_output_dataframes <- function(full_kp_df,full_demo_df,filename){
   return(list('triangulator_results'=tri_full_out,'aggregator_results'=agg_full_out,'urb_prior_df'=prev_urb_prior,'full_demo_df'=demo_out))
 }
 
+# Write KP DF with confidence and Triangulator Priors to the format of Triangulator outputs
+
+write_triangulator_inputs <- function(kp_df,tri_priors_df){
+  country <- unique(kp_df$country)
+  kp <- unique(kp_df$kp)
+  areas <- unique(kp_df$province)
+  prior_rows <- list()
+  #
+  for(a in areas){
+    tr_prior_med = logit(tri_priors_df$prior_med[tri_priors_df$province==a])
+    tr_prior_SE = (logit(tri_priors_df$prior_q75[tri_priors_df$province==a])-logit(tri_priors_df$prior_med[tri_priors_df$province==a]))/qnorm(0.75)
+
+    # Add row for prior
+    prior_row <- list(country,kp,NA,NA,'Prior',NA,NA,a,expit(tr_prior_med),expit(tr_prior_med-1.96*tr_prior_SE),expit(tr_prior_med+1.96*tr_prior_SE),NA,NA) #NA,NA,
+    prior_rows[[length(prior_rows)+1]] <- prior_row
+  }
+  # Add prior rows to the kp_df, subsetted for output columns
+  kp_out_cols <- c('country','kp','study_idx','observation_idx','method','year','area_name','province','proportion_estimate','proportion_lower','proportion_upper','confidence','SE_interpolated') #'conf_lower','conf_upper',
+  prior_df <- do.call('rbind.data.frame',prior_rows)
+  colnames(prior_df) <- kp_out_cols
+
+  full_df <- bind_rows(kp_df[,kp_out_cols],prior_df)
+
+  return(full_df)
+}
+
 # Translate between the Triangulator Prior HOT and the Dataframe Version
 
 tri_prior_HOT_to_results <- function(tri_prior_HOT,triangulator_results,kp){
