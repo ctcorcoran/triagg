@@ -54,7 +54,6 @@ run_triangulator <- function(area_ests,prior_list){
   }
 
   #Fit Model
-  browser()
   fit <- rstan::sampling(stanmodels$triangulator,
                   data=data,
                   iter=iter,
