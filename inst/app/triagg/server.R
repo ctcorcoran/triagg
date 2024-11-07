@@ -171,7 +171,7 @@ function(input, output, session) {
           openxlsx::writeData(wb,sheet='aggregator_input',isolate(values[['full_demo_df']]),startRow=4)
           #
           for(sheet in c('triangulator_confidence','aggregator_output','aggregator_input')){
-            openxlsx::sheetVisibility(wb)[sheet] <- 'hidden'
+            openxlsx::sheetVisibility(wb)[which(names(wb)==sheet)] <- 'hidden'
           }
           #
           openxlsx::saveWorkbook(wb,file,overwrite=TRUE)
