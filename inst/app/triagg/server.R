@@ -6,6 +6,8 @@ library(openxlsx)
 library(DT)
 library(triagg)
 
+options(shiny.maxRequestSize=30*1024^2)
+
 
 function(input, output, session) {
   kp_ref_list <- list('MSM'='male','FSW'='female','PWID'='male','TGW'='female')
