@@ -5,6 +5,7 @@ library(rstan)
 library(openxlsx)
 library(DT)
 library(triagg)
+library(countrycode)
 
 options(shiny.maxRequestSize=30*1024^2)
 
@@ -82,13 +83,14 @@ function(input, output, session) {
 
     # Assign some session values and navigation lists
     values[['country']] <- unique(df$country)
+    values[['iso3']] <- countrycode::countrycode(unique(df$country), "country.name", "iso3c")
     kp_list <- unique(df$kp)
     #
     updateSelectInput(session,inputId='kp',choices=kp_list)
     values[["nav_list"]] <- setNames(append(list(c(0,0,0,0,0)),rep(list(c(0,0,0,0,0)),length(kp_list)-1)),kp_list)
 
     # Make Demography Dataframes
-    values[['full_demo_df']] <- ref_pops[(ref_pops$country==values[['country']])&(ref_pops$year==year),]
+    values[['full_demo_df']] <- ref_pops[(ref_pops$country_id==values[['iso3']])&(ref_pops$year==year),]
 
     # Make KP and Preallocated Output Dataframes
     dfs_to_save <- triagg:::generate_output_dataframes(df,isolate(values[['full_demo_df']]),input$upload$datapath)
