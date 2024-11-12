@@ -10,6 +10,7 @@ trans <- logit
 inv_trans <- expit
 
 process_kp_workbook <- function(df,lang){
+
   interp_stat <- 'q75'
 
   colnames(df) <- c('country', "indicator", 'method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx', "method_rating", "method_issue", "validation_issue")
@@ -36,7 +37,10 @@ process_kp_workbook <- function(df,lang){
                          'CDI'='PWID'
                          ),
              method = recode(method,
-                             'Multiplicateur d\'objets/événements' = 'Object multiplier'
+                             'Multiplicateur d\'objets/événements' = 'Object multiplier',
+                             "Multiplicateur de service" = "Service multiplier",
+                             "Plusieurs méthodes - empirique" = "Multiple methods - empirical",
+                             "Plusieurs méthodes - non empirique" = "Multiple methods - non-empirical"
                              )
              )
   }
@@ -62,6 +66,7 @@ process_kp_workbook <- function(df,lang){
 }
 
 generate_output_dataframes <- function(full_kp_df,full_demo_df,filename){
+
   country <- unique(full_kp_df$country)
   kps <- unique(full_kp_df$kp)
 
