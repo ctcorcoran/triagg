@@ -627,7 +627,8 @@ function(input, output, session) {
     #
     demo_df <- isolate(values[["demo_df"]])
     parameter_priors <- list(alpha=log(input$urb_prior_median),gamma=((log(input$urb_prior_q95)-log(input$urb_prior_median))/qnorm(0.975)),t=values[['t_value']])
-    agg_out <- triagg:::run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors)
+    agg_out <- triagg:::run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors,
+                                       input$imperial_prior,isolate(values[['country']]),input$kp)
     values[['aggregator_output']] <- agg_out
     values[['aggregator_results']] <- rows_update(values[['aggregator_results']],agg_out,by=c('country','kp','level','urb','province'))
     values[['urb_prior_df']][,input$kp] <- c(input$urb_prior_median,input$urb_prior_q95)

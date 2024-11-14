@@ -26,7 +26,7 @@ empirical_bayes2 <- function(y, D){
   return(list('m'=m,'t'= t))
 }
 
-aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors,imperial_prior){
+aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors,imperial_prior,country,kp_){
   # ALPHA and GAMMMA: Controls prior on urban rural ratio (kappa)
   # LAMBDA: Controls prior on how different the omegas are across district
 
@@ -75,13 +75,14 @@ aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors,
   tests <- rep(0,N)
   tvars <- rep(0,N)
 
+  #browser()
   if(imperial_prior){
-    iso3 <- countrycode::codelist$iso3c[countrycode::codelist$country.name.en==isolate(values[['country']])]
-    prior <- natl_pse_priors %>% filter(iso3==iso3,kp==isolate(values[['kp']]))
+    iso3_ <- countrycode::codelist$iso3c[countrycode::codelist$country.name.en==country]
+    prior <- natl_pse_priors %>% filter(iso3==iso3_,kp==kp_)
     nat_urb_prop <- weighted.mean(pc,p)
     #
-    m_med <- prior$median-(1-nat_urb_prop)*parameter_priors[['alpha']]
-    m_se <- sqrt(((logit(upper)-logit(lower))/(2*qnorm(0.975)))^2+(1-nat_urb_prop)^2*(parameter_priors[['gamma']])^2)
+    m_med <- logit(prior$median)-(1-nat_urb_prop)*parameter_priors[['alpha']]
+    m_se <- sqrt(((logit(prior$upper)-logit(prior$lower))/(2*qnorm(0.975)))^2+(1-nat_urb_prop)^2*(parameter_priors[['gamma']])^2)
   } else {
     m_med=0
     m_se=5
@@ -169,12 +170,12 @@ process_agg_results <- function(agg_fit,demo_df,tri_consensus_output){
 }
 
 # Wrapper for pre-processing, fitting, and post-processing aggregator
-run_aggregator <- function(tri_consensus_output,demo_df,parameter_priors,imperial_prior){
+run_aggregator <- function(tri_consensus_output,demo_df,parameter_priors,imperial_prior,country,kp){
   ### Stan Controls:
   control = list(adapt_delta=0.95,max_treedepth=12)
   iter=8000
 
-  agg_input_data <- aggregator_input_data(tri_consensus_output,demo_df,parameter_priors,imperial_prior)
+  agg_input_data <- aggregator_input_data(tri_consensus_output,demo_df,parameter_priors,imperial_prior,country,kp)
 
   agg_fit <- rstan::sampling(
     stanmodels$aggregator,
