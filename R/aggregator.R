@@ -26,7 +26,7 @@ empirical_bayes2 <- function(y, D){
   return(list('m'=m,'t'= t))
 }
 
-aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors,imperial_prior,country,kp_){
+aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors,imperial_prior,country_iso3,kp_){
   # ALPHA and GAMMMA: Controls prior on urban rural ratio (kappa)
   # LAMBDA: Controls prior on how different the omegas are across district
 
@@ -77,8 +77,7 @@ aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors,
 
   #browser()
   if(imperial_prior){
-    iso3_ <- countrycode::codelist$iso3c[countrycode::codelist$country.name.en==country]
-    prior <- natl_pse_priors %>% filter(iso3==iso3_,kp==kp_)
+    prior <- natl_pse_priors %>% filter(iso3==country_iso3,kp==kp_)
     nat_urb_prop <- weighted.mean(pc,p)
     #
     m_med <- logit(prior$median)-(1-nat_urb_prop)*parameter_priors[['alpha']]
