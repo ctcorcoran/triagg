@@ -301,8 +301,12 @@ function(input, output, session) {
   observe({
     if (!is.null(input$kp_data_hot)) {
         kp_df <- hot_to_r(input$kp_data_hot)
-        colnames(kp_df)[c(3:9,12,14)] <- c('study_idx','observation_idx','method','year','area_name','province','proportion_estimate','display_CI','confidence')
-        kp_df <- kp_df[,!(colnames(kp_df) %in% c('display_CI'))]
+        colnames(kp_df)[c(3:8,12:13,15)] <- c('study_idx','observation_idx','method','year','area_name','province','display_prop','display_CI','confidence')
+        # See note about rHandsontable loss of precision below
+        kp_df <- kp_df %>% mutate(proportion_estimate = 0.001*proportion_estimate,
+                                  proportion_lower = 0.001*proportion_lower,
+                                  proportion_upper = 0.001*proportion_upper)
+        kp_df <- kp_df[,!(colnames(kp_df) %in% c('display_prop','display_CI'))]
       } else {
         if (is.null(values[["kp_df"]]))
           kp_df <- kp_df
@@ -315,11 +319,15 @@ function(input, output, session) {
 
   output$kp_data_hot <- renderRHandsontable({
     kp_df <- values[["kp_df"]]
-    values[['kp_change']][['kp_df']] <- FALSE
     if (!is.null(kp_df)){
-      kp_df$display_CI <- ifelse(is.na(kp_df$proportion_lower)&is.na(kp_df$proportion_upper),'',paste0('(',round(100*kp_df$proportion_lower,1),'%, ',round(100*kp_df$proportion_upper,1),'%)'))
-      kp_df <- kp_df[,c(1:11,14,12:13)]
-      colnames(kp_df)[c(3:9,12,14)] <- c('Study ID','Observation ID','Method','Year','Area Name','Province','Proportion Estimate','Uncertainty Interval','Study Confidence')
+      kp_df$display_prop <- paste0(round(100*kp_df$proportion_estimate,3),'%')
+      kp_df$display_CI <- ifelse(is.na(kp_df$proportion_lower)&is.na(kp_df$proportion_upper),'',paste0('(',round(100*kp_df$proportion_lower,3),'%, ',round(100*kp_df$proportion_upper,3),'%)'))
+      # rHandsontable (vexingly) rounds all entries to 1e-4 when it processes the table, so we'll have to multiply the raw (undisplayed) data, then convert back after hot_to_r does its job above
+      kp_df <- kp_df %>% mutate(proportion_estimate = 1000*proportion_estimate,
+                                proportion_lower = 1000*proportion_lower,
+                                proportion_upper = 1000*proportion_upper)
+      kp_df <- kp_df[,c(1:11,14:15,12:13)]
+      colnames(kp_df)[c(3:8,12:13,15)] <- c('Study ID','Observation ID','Method','Year','Area Name','Province','Proportion Estimate','Uncertainty Interval','Study Confidence')
       rownames(kp_df) <- 1:nrow(kp_df)
       rhandsontable(
         kp_df,
@@ -329,8 +337,8 @@ function(input, output, session) {
         hot_cols(columnSorting=TRUE) %>%
         hot_col('Study Confidence',readOnly = FALSE) %>%
         hot_validate_numeric(cols=c('Study Confidence'),min=0,max=100)%>%
-        hot_col('Proportion Estimate',format='0.0%') %>%
-        hot_col(c('country','kp','proportion_lower','proportion_upper','Province','SE_interpolated'),colWidths=0.1) #,'province'
+        hot_col('Proportion Estimate',format='0.000%') %>%
+        hot_col(c('country','kp','proportion_estimate','proportion_lower','proportion_upper','Province','SE_interpolated'),colWidths=0.1) #,'province'
     }
   })
 
@@ -343,7 +351,7 @@ function(input, output, session) {
       values[['nav_list']][[input$kp]][2] <- ifelse(all(!is.na(values[['tri_priors_df']])),2,1)
       updateTabsetPanel(inputId='tabs',selected='Triangulator Inputs')
     } else {
-      output$validity_table <- DT::renderDT({validity_check$invalid_rows[,1:11] %>% datatable(options = list(dom = 't',ordering=FALSE)) %>% formatRound(columns=c('proportion_lower','proportion_estimate','proportion_upper'),digits=3)})
+      output$validity_table <- DT::renderDT({validity_check$invalid_rows[,1:11] %>% datatable(options = list(dom = 't',ordering=FALSE)) %>% formatRound(columns=c('proportion_lower','proportion_estimate','proportion_upper'),digits=5)})
       showModal(modalDialog(
         title='KP Data Validity Error',
         align='center',
@@ -351,7 +359,7 @@ function(input, output, session) {
         size='xl',
         tags$h4('Ensure proportion_lower < proportion_estimate < proportion_upper'),
         tags$h4('The following observations require your attention:'),
-        shiny::dataTableOutput('validity_table')
+        DT::DTOutput('validity_table')
       ))
     }
   })
