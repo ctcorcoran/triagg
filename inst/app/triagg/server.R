@@ -421,7 +421,8 @@ function(input, output, session) {
         hot_col('Province',readOnly = TRUE)%>%
         hot_validate_numeric(cols=c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)'),min=0.0,max=100.0)%>%
         hot_col('Expected Value - Median (%)',format='0.0')%>%
-        hot_col('Expected Value - 75th Percentile (%)',format='0.0')
+        hot_col('Expected Value - 75th Percentile (%)',format='0.0') %>%
+        hot_cols(colWidths = 150)
     } else {
       NULL
     }
@@ -564,9 +565,11 @@ function(input, output, session) {
     demo_df <- values[['demo_df']]
     if (!is.null(demo_df)){
       demo_df <- demo_df[demo_df$province!='Total',]
-      rownames(demo_df) <- 1:nrow(demo_df)
+      #rownames(demo_df) <- 1:nrow(demo_df)
       demo_df <- demo_df %>%
-        mutate(prop_of_nat_pop=pop/sum(pop)) %>%
+        mutate(pop=round(pop,0)) %>%
+        mutate(prop_of_nat_pop=pop/sum(pop))
+      demo_df <- demo_df %>%
         add_row(province='Total',
                 year=unique(demo_df$year),
                 pop=sum(demo_df$pop),
@@ -579,8 +582,8 @@ function(input, output, session) {
         readOnly = TRUE, #FALSE,
       ) %>%
         hot_col('Province') %>%   #,readOnly = TRUE) %>%
-        hot_col('Year') %>%   #,readOnly = TRUE) %>%
-        hot_col('Population',format='0,0') %>%
+        hot_col('Year',format='0') %>%   #,readOnly = TRUE) %>%
+        hot_col('Population') %>%
         hot_col('Percent Urban',format='0.0%') %>%
         hot_col('Percent of National Pop.',format='0.0%') %>%   #,readOnly = TRUE) %>%
         hot_row(nrow(demo_df))  #,readOnly = TRUE)
