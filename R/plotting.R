@@ -30,7 +30,7 @@ plot_triangulator_forest <- function(triangulator_full_output,province,plot_scal
                                  expit(logit(forest_df$proportion_estimate)+(logit(forest_df$proportion_upper)-logit(forest_df$proportion_lower))/(2*forest_df$confidence/100)))
 
   # Set some maximum/minimum values
-  eff_min <- 1e-4
+  eff_min <- 1e-8
   extend_pct <- 0.05
   #
   conf_min <- max(eff_min,min(forest_df$conf_lower[!is.na(forest_df$conf_lower)],forest_df$proportion_lower))
