@@ -627,6 +627,21 @@ function(input, output, session) {
 
   #####################
   # >>> RUN AGGREGATOR
+  output$min_data_warning_text_n_obs <- renderText({
+    '<div style="max-width:600px; word-wrap:break-word;">
+    For the current key population, there are fewer than three population size estimates that can be used to inform the
+    national aggregate estimate.
+    </br>
+    In this case, we recommend using the estimates produced by the Imperial College model, which will be displayed on the next page.
+    </div>'})
+
+  output$min_data_warning_text_n_prov <- renderText({
+    '<div style="max-width:600px; word-wrap:break-word;">
+    For the current key population, there are only estimates from a single province. The aggregator model requires data from two or
+    more provinces.
+    </br>
+    In this case, we recommend using the estimates produced by the Imperial College model, which will be displayed on the next page.
+    </div>'})
 
   observeEvent(input$run_agg,{
     if(is.null(values[["tri_consensus_output"]]))
@@ -635,28 +650,24 @@ function(input, output, session) {
     demo_df <- isolate(values[["demo_df"]])
     country <- isolate(values[['country']])
     iso3 <- countrycode::codelist$iso3c[countrycode::codelist$country.name.en==country]
-
+    browser()
     if((nrow(kp_df) < 3)|(length(unique(kp_df$province)) < 2)){
       if(nrow(kp_df) < 3){
-        text <- 'For the current key population, there are fewer than three population size estimates that can be used to inform the
-        national aggregate estimate.'
+        text <- 'min_data_warning_text_n_obs'
       } else if(length(unique(kp_df$province)) < 2){
-        text <- 'For the current key population, there are only estimates from a single province. The aggregator model requires data from two or
-        more provinces.'
+        text <- 'min_data_warning_text_n_prov'
       }
-      text2 <- 'In this case, we recommend using the estimates produced by the Imperial College model, which will be displayed on the next page.'
-      output$min_data_warning_text <- renderText(paste(text,text2))
       showModal(modalDialog(
         title='Alert - Minimum Data Requirements Not Met',
         align = 'center',
         easyClose=FALSE,
         size='l',
-        textOutput("min_data_warning_text")
+        textOutput(text)
       ))
       model_results <- natl_pse_priors %>% filter(iso3==iso3,kp==input$kp)
       agg_out <- data.frame(country=country,kp = input$kp,province='National',level='National',urb='Total',
                             proportion_estimate = model_results$median, proportion_lower = model_results$lower,proportion_upper=model_results$upper,
-                            has_ests=2,prop_of_nat_pop=1.0,urban_proportion=weighted.mean(demo_df$urban_proportion,demo_df$population),pop=sum(demo_df$pop))
+                            has_ests=2,prop_of_nat_pop=1.0,urban_proportion=weighted.mean(demo_df$urban_proportion,demo_df$pop),pop=sum(demo_df$pop))
       agg_out[,c('count_estimate','count_lower','count_upper')] <- agg_out[,c('proportion_estimate','proportion_lower','proportion_upper')]*agg_out$pop
       agg_out$source <- 'collation'
     } else {
