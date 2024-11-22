@@ -26,7 +26,7 @@ empirical_bayes2 <- function(y, D){
   return(list('m'=m,'t'= t))
 }
 
-aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors){
+aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors,imperial_prior,country_iso3,kp_){
   # ALPHA and GAMMMA: Controls prior on urban rural ratio (kappa)
   # LAMBDA: Controls prior on how different the omegas are across district
 
@@ -75,6 +75,18 @@ aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors)
   tests <- rep(0,N)
   tvars <- rep(0,N)
 
+  #browser()
+  if(imperial_prior){
+    prior <- natl_pse_priors %>% filter(iso3==country_iso3,kp==kp_)
+    nat_urb_prop <- weighted.mean(pc,p)
+    #
+    m_med <- logit(prior$median)-(1-nat_urb_prop)*parameter_priors[['alpha']]
+    m_se <- sqrt(((logit(prior$upper)-logit(prior$lower))/(2*qnorm(0.975)))^2+(1-nat_urb_prop)^2*(parameter_priors[['gamma']])^2)
+  } else {
+    m_med=0
+    m_se=5
+  }
+
   ###
   data <- list(
     N=N,
@@ -94,7 +106,9 @@ aggregator_input_data <- function(tri_consensus_output,demo_df,parameter_priors)
     tvars=tvars,
     alpha=parameter_priors[['alpha']],
     gamma=parameter_priors[['gamma']],
-    t=parameter_priors[['t']]
+    t=parameter_priors[['t']],
+    m_med=m_med,
+    m_se=m_se
   )
   return(data)
 }
@@ -155,12 +169,12 @@ process_agg_results <- function(agg_fit,demo_df,tri_consensus_output){
 }
 
 # Wrapper for pre-processing, fitting, and post-processing aggregator
-run_aggregator <- function(tri_consensus_output,demo_df,parameter_priors){
+run_aggregator <- function(tri_consensus_output,demo_df,parameter_priors,imperial_prior,country,kp){
   ### Stan Controls:
   control = list(adapt_delta=0.95,max_treedepth=12)
   iter=8000
 
-  agg_input_data <- aggregator_input_data(tri_consensus_output,demo_df,parameter_priors)
+  agg_input_data <- aggregator_input_data(tri_consensus_output,demo_df,parameter_priors,imperial_prior,country,kp)
 
   agg_fit <- rstan::sampling(
     stanmodels$aggregator,

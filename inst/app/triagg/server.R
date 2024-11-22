@@ -630,15 +630,58 @@ function(input, output, session) {
 
   #####################
   # >>> RUN AGGREGATOR
+  output$min_data_warning_text_n_obs <- renderText({
+    '<div style="max-width:600px; word-wrap:break-word;">
+    For the current key population, there are fewer than three population size estimates that can be used to inform the
+    national aggregate estimate.
+    </br>
+    In this case, we recommend using the estimates produced by the Imperial College model, which will be displayed on the next page.
+    </div>'})
+
+  output$min_data_warning_text_n_prov <- renderText({
+    '<div style="max-width:600px; word-wrap:break-word;">
+    For the current key population, there are only estimates from a single province. The aggregator model requires data from two or
+    more provinces.
+    </br>
+    In this case, we recommend using the estimates produced by the Imperial College model, which will be displayed on the next page.
+    </div>'})
 
   observeEvent(input$run_agg,{
     if(is.null(values[["tri_consensus_output"]]))
       return(NULL)
-    showModal(modalDialog(title=NULL,align='center',tags$h3('Running Aggregator'),footer=NULL,size='l',easyClose = FALSE))
-    #
+    kp_df <- isolate(values[['kp_df']])
     demo_df <- isolate(values[["demo_df"]])
-    parameter_priors <- list(alpha=log(input$urb_prior_median),gamma=((log(input$urb_prior_q95)-log(input$urb_prior_median))/qnorm(0.975)),t=values[['t_value']])
-    agg_out <- triagg:::run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors)
+    country <- isolate(values[['country']])
+    iso3 <- countrycode::codelist$iso3c[countrycode::codelist$country.name.en==country]
+    browser()
+    if((nrow(kp_df) < 3)|(length(unique(kp_df$province)) < 2)){
+      if(nrow(kp_df) < 3){
+        text <- 'min_data_warning_text_n_obs'
+      } else if(length(unique(kp_df$province)) < 2){
+        text <- 'min_data_warning_text_n_prov'
+      }
+      showModal(modalDialog(
+        title='Alert - Minimum Data Requirements Not Met',
+        align = 'center',
+        easyClose=FALSE,
+        size='l',
+        textOutput(text)
+      ))
+      model_results <- natl_pse_priors %>% filter(iso3==iso3,kp==input$kp)
+      agg_out <- data.frame(country=country,kp = input$kp,province='National',level='National',urb='Total',
+                            proportion_estimate = model_results$median, proportion_lower = model_results$lower,proportion_upper=model_results$upper,
+                            has_ests=2,prop_of_nat_pop=1.0,urban_proportion=weighted.mean(demo_df$urban_proportion,demo_df$pop),pop=sum(demo_df$pop))
+      agg_out[,c('count_estimate','count_lower','count_upper')] <- agg_out[,c('proportion_estimate','proportion_lower','proportion_upper')]*agg_out$pop
+      agg_out$source <- 'collation'
+    } else {
+      showModal(modalDialog(title=NULL,align='center',tags$h3('Running Aggregator'),footer=NULL,size='l',easyClose = FALSE))
+      #
+      parameter_priors <- list(alpha=log(input$urb_prior_median),gamma=((log(input$urb_prior_q95)-log(input$urb_prior_median))/qnorm(0.975)),t=values[['t_value']])
+      agg_out <- triagg:::run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors,
+                                         input$imperial_prior,iso3,input$kp)
+      removeModal()
+    }
+    #
     values[['aggregator_output']] <- agg_out
     values[['aggregator_results']] <- rows_update(values[['aggregator_results']],agg_out,by=c('country','kp','level','urb','province'))
     values[['urb_prior_df']][,input$kp] <- c(input$urb_prior_median,input$urb_prior_q95)
@@ -647,9 +690,6 @@ function(input, output, session) {
     demo_cols <- c('province','year','sex','pop','urban_proportion')
     values[['full_demo_df']][,demo_cols] <- values[['full_demo_df']][,demo_cols] %>%
       rows_update(demo_df[,demo_cols],by=c('province','year','sex'))
-    #
-    removeModal()
-    #
     values[['nav_list']][[input$kp]][5] <- 2
     updateTabsetPanel(inputId='tabs',selected='Aggregator Outputs')
   })
