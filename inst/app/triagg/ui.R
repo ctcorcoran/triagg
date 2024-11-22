@@ -118,7 +118,7 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              actionButton("run_agg","Run Aggregator",style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       column(6,
-             checkboxInput('imperial_prior','Use Imperial Model Prior'),
+             checkboxInput('imperial_prior','Use Expected Value Informed by Data'),
              tags$h3('Demographic Data'),
              textOutput("demo_ref_pop"),
              br(),
