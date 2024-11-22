@@ -118,7 +118,7 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              actionButton("run_agg","Run Aggregator",style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       column(6,
-             tags$h3('Demographic Data'),
+             tags$h3('Demographic Data (2024)'),
              textOutput("demo_ref_pop"),
              br(),
              rHandsontableOutput("demo_data_hot",width=600),
@@ -131,10 +131,10 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              column(6,numericInput("urb_prior_q95","95th Percentile", .7))
              ),
              plotOutput("urb_prior_plot"),
-             p("Summaries"),
-             tableOutput("urb_prior_summaries"),
-             p("Quantiles:"),
-             tableOutput("urb_prior_quant")
+             # p("Summaries"),
+             # tableOutput("urb_prior_summaries"),
+             # p("Quantiles:"),
+             # tableOutput("urb_prior_quant")
              )
     ),
     #############################

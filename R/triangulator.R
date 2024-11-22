@@ -87,6 +87,7 @@ triangulate <- function(kp_df,tri_priors_df){
     # Get prior info
     tr_prior_med = logit(tri_priors_df$prior_med[tri_priors_df$province==a])
     tr_prior_SE = (logit(tri_priors_df$prior_q75[tri_priors_df$province==a])-logit(tri_priors_df$prior_med[tri_priors_df$province==a]))/qnorm(0.75)
+    tr_prior_SE[which(tr_prior_SE==0.0)] <- 1e-6
 
     # Run the model
     t_out <- run_triangulator(area_ests,list('med'=tr_prior_med,'SE'=tr_prior_SE))

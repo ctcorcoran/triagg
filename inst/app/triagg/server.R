@@ -463,7 +463,7 @@ function(input, output, session) {
   output$tri_prior_quant <- renderTable({
     if(is.null(tri_prior_samp()))
       return(NULL)
-    q <- t(as.matrix(quantile(tri_prior_samp(), probs = c(.05,.1,.2,.3,.4,.5,.6,.7,.8,.9,.95),na.rm=TRUE)))
+    q <- t(as.matrix(quantile(tri_prior_samp(), probs = c(0.05,0.25,0.5,0.75,0.95),na.rm=TRUE)))
     as.data.frame(q)
   })
 
@@ -582,8 +582,8 @@ function(input, output, session) {
         readOnly = TRUE, #FALSE,
       ) %>%
         hot_col('Province') %>%   #,readOnly = TRUE) %>%
-        hot_col('Year',format='0') %>%   #,readOnly = TRUE) %>%
-        hot_col('Population') %>%
+        hot_col('Year',colWidths=0.1) %>%   #,readOnly = TRUE) %>%
+        hot_col('Population',format='0,0') %>%
         hot_col('Percent Urban',format='0.0%') %>%
         hot_col('Percent of National Pop.',format='0.0%') %>%   #,readOnly = TRUE) %>%
         hot_row(nrow(demo_df))  #,readOnly = TRUE)
