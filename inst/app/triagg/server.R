@@ -653,7 +653,6 @@ function(input, output, session) {
     demo_df <- isolate(values[["demo_df"]])
     country <- isolate(values[['country']])
     iso3 <- countrycode::codelist$iso3c[countrycode::codelist$country.name.en==country]
-    browser()
     if((nrow(kp_df) < 3)|(length(unique(kp_df$province)) < 2)){
       if(nrow(kp_df) < 3){
         text <- 'min_data_warning_text_n_obs'
