@@ -334,6 +334,7 @@ function(input, output, session) {
         useTypes = TRUE,
         readOnly = TRUE
       ) %>%
+        hot_rows(rowHeights = 25) %>% # Force default row heights, since overfull cells in 'hidden' columns can cause the display to change
         hot_cols(columnSorting=TRUE) %>%
         hot_col('Study Confidence',readOnly = FALSE) %>%
         hot_validate_numeric(cols=c('Study Confidence'),min=0,max=100)%>%
@@ -726,10 +727,13 @@ function(input, output, session) {
   })
 
   # Aggregator Output Plot
+
   output$agg_out_plot <- renderPlot({
     if(!is.null(values[['aggregator_output']]))
       triagg:::plot_aggregator_forest(isolate(values[['aggregator_output']]),input$agg_out_scale,input$agg_display_select)
-  })
+  },
+  width = 500,
+  height = function() {nrow(values[['aggregator_output']])*8})
 
   ######################
   # >>> NEXT KP BUTTON

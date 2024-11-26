@@ -43,11 +43,15 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              actionButton('show_full_kp_instructions',"Full Instructions")
       )),
       column(2,
-             actionButton('progress_to_tri',label='Triangulator Inputs >',disabled=TRUE,style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
+             actionButton('progress_to_tri',label='Triangulator Inputs >',disabled=TRUE,
+                          style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       br(),
       column(12,br(),
-             wellPanel(rHandsontableOutput("kp_data_hot"))),
+             wellPanel(
+               tags$style('#kp_df * { text-wrap: nowrap }'), #Workaround to set an effective maximum row height
+               div(id='kp_df',rHandsontableOutput("kp_data_hot")))
+             ),
       br(),
     ),
     ##############################
@@ -61,7 +65,8 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              htmlOutput("tri_instructions"),
              actionButton('show_full_tri_instructions',"Full Instructions"))),
       column(2,
-             actionButton("run_tri","Run Triangulator",disabled=TRUE,style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
+             actionButton("run_tri","Run Triangulator",disabled=TRUE,
+                          style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       column(6,
         tags$h3('KP Proportion Expected Value'),
@@ -88,7 +93,8 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              htmlOutput("tri_out_instructions")
              )),
       column(2,
-             actionButton('progress_to_agg',label='Aggregator Inputs >',disabled=FALSE,style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
+             actionButton('progress_to_agg',label='Aggregator Inputs >',disabled=FALSE,
+                          style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       column(5,
              tags$h3('KP Proportion Consensus Estimates'),
@@ -115,7 +121,8 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
              actionButton('show_full_agg_instructions',"Full Instructions")
              )),
       column(2,
-             actionButton("run_agg","Run Aggregator",style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
+             actionButton("run_agg","Run Aggregator",
+                          style="color: #fff; background-color: #fc5151; border-color: #ffb5b5")
              ),
       column(6,
              checkboxInput('imperial_prior','Use Expected Value Informed by Data'),
@@ -152,13 +159,13 @@ shinyUI(fluidPage(theme=shinythemes::shinytheme('cosmo'),
                       uiOutput('progress_kp_button')
                       )),
       br(),
-      column(5,
+      column(6,
              selectInput('agg_display_select','Display:',c('Total','Urban','Rural')),
              tableOutput("agg_nat_out_table"),
              br(),
              tableOutput("agg_SNU_out_table"),
       ),
-      column(7,
+      column(6,
              tags$h3('Aggregator Consensus Estimates Plot'),
              radioButtons('agg_out_scale','Plot Scale: ',choices=c('Log','Linear'),selected='Linear',inline=TRUE),
              plotOutput('agg_out_plot'),
