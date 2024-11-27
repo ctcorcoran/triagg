@@ -18,16 +18,16 @@ process_kp_workbook <- function(df,lang){
   if(lang == "English") {
     df <- df %>%
       filter(indicator == "Population size estimate",
-             method_issue == "No",
-             validation_issue == "No",
+             method_issue == "Include",
+             validation_issue == "Include",
              method_rating == "Empirical method") %>%
       select(-indicator)
 
   } else {
     df <- df %>%
       filter(indicator == "Estimation de la taille de la population",
-             method_issue == "Non",
-             validation_issue == "Non",
+             method_issue == "Inclure",
+             validation_issue == "Inclure",
              method_rating == "Méthode empirique") %>%
       select(-indicator) %>%
       mutate(kp = recode(kp,
