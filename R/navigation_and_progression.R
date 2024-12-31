@@ -1,8 +1,14 @@
+# TAB STATUSES:
+# 0: Inaccessible, Incomplete
+# 1: Accessible, Incomplete
+# 2: Accessible, Complete
+# 3: Inaccessible, Complete
+
 showhide_tabs <- function(nav_list,tab_names){
-  for(tab_to_show in which(nav_list > 0)){
+  for(tab_to_show in which(nav_list %in% c(1,2))){
     showTab(inputId='tabs',target=tab_names[tab_to_show])
   }
-  for(tab_to_hide in which(nav_list == 0)){
+  for(tab_to_hide in which(nav_list %in% c(0,3))){
     hideTab(inputId='tabs',target=tab_names[tab_to_hide])
   }
 }
@@ -18,8 +24,8 @@ progress_table <- function(nav_list,kp,tab_names){
   if(is.null(nav_list)){
     return(NULL)
   } else {
-    input_text <- c('Incomplete','In Progress','Complete')
-    result_text <- c('Invalid','Invalid','Valid')
+    input_text <- c('Incomplete','In Progress','Complete','Complete')
+    result_text <- c('Invalid','Invalid','Valid','Valid')
     out <- as.data.frame(lapply(1:5,function(x){ifelse(x%in%c(3,5),
                                                        result_text[nav_list[[kp]][x]+1],
                                                        input_text[nav_list[[kp]][x]+1])}))

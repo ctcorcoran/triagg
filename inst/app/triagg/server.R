@@ -11,8 +11,8 @@ options(shiny.maxRequestSize=30*1024^2)
 
 
 function(input, output, session) {
-  kp_ref_list <- list('MSM'='male','FSW'='female','PWID'='male','TGW'='female')
-  kp_ref_display_list <- list('MSM'='Male','FSW'='Female','PWID'='Male','TGW'='Female')
+  kp_ref_list <- list('FSW'='female','MSM'='male','PWID'='male','TGW'='female')
+  kp_ref_display_list <- list('FSW'='Female','MSM'='Male','PWID'='Male','TGW'='Female')
   tab_names <- c('KP Data Input','Triangulator Inputs','Triangulator Outputs','Aggregator Inputs','Aggregator Outputs')
 
   ##########################
@@ -22,6 +22,7 @@ function(input, output, session) {
 
   year <- '2024'
   values[['country']] <- ''
+  values[['kp_no_data']] <- NULL
 
   values[["kp_df"]] <- NULL
   kp_df <- NULL
@@ -44,6 +45,9 @@ function(input, output, session) {
   values[['nav_list']] <- NULL
   values[['kp_prog_table']] <- NULL
   values[['overall_prog_table']] <- NULL
+
+  # Value to execute aggregator - whether Aggregator model or pulling Imperial results
+  values[['run_agg']] <- FALSE
 
   #################################
   # KP WORKBOOK UPLOAD ON STARTUP #
@@ -79,36 +83,96 @@ function(input, output, session) {
 
     # Process Validation Sheet in to workable format
     df <- triagg:::process_kp_workbook(df,input$language_selector)
-    df$confidence <- as.integer(NA)
 
-    # Assign some session values and navigation lists
-    values[['country']] <- unique(df$country)
-    values[['iso3']] <- countrycode::countrycode(unique(df$country), "country.name", "iso3c")
-    kp_list <- unique(df$kp)
+    removeModal()
+    df
+  })
+
+  # Some output text for when the uploaded KP Workbook has no estimates
+
+  output$no_pses_text <- renderText({'
+    <div style="max-width:600px; word-wrap:break-word;">
+    If you have key population size estimates you intended to include, press the \'Restart App\' button below,
+    return to the \'Validation\' tab of the KP Workbook, and double-check that the \'Methodological
+    or sample size concerns\' and \'Validation concerns\' columns have been completed.
+    </br>
+    </br>
+    If you have no key population size estimates to include, you can still use this app (national estimates from the Imperial College
+    model will be returned). In this case, select your country name below and press the \'Proceed Without Estimates\' button below.
+    </div>
+    '})
+
+  # MODAL FOR SELECTING COUNTRY WITH NO DATA
+  observeEvent(uploaded_data(),{
+    df <- isolate(uploaded_data())
+    if(nrow(df)==0){
+      showModal(modalDialog(
+        title='No Population Size Estimates Detected',
+        footer=tagList(
+          actionButton('no_pses_restart',label='Restart App'),
+          actionButton('no_pses_proceed',label='Proceed Without Estimates',disabled=TRUE)
+        ),
+        htmlOutput('no_pses_text'),
+        selectInput('country_select_no_pses',label='Country:',choices=c('',countrycode::codelist$country.name.en[countrycode::codelist$iso3c %in% unique(natl_pse_priors$iso3)]))
+      ))
+    } else {
+      values[['country']] <- unique(df$country)
+    }
+  })
+
+  # TOGGLE 'PROCEED' BUTTON WITH COUNTRY ENTRY
+  observeEvent(input$country_select_no_pses,{
+    req(input$country_select_no_pses)
+    if(input$country_select_no_pses != ''){
+      updateActionButton(session,inputId = 'no_pses_proceed',disabled=FALSE)
+    }
+  })
+
+  # PROCEED WITHOUT ESTIMATES BUTTON
+  observeEvent(input$no_pses_proceed,{
+    values[['country']] <- input$country_select_no_pses
+    removeModal()
+  })
+
+  # RESTART BUTTON
+  observeEvent(input$no_pses_restart,{
+    session$reload()
+  })
+
+  # PROCEED
+  observeEvent(values[['country']],{
+    req(values[['country']])
+    temp_country <- isolate(values[['country']])
+    temp_kps <- unique(isolate(uploaded_data())$kp)
+
+    # Assign some more session values and navigation lists
+    values[['iso3']] <- countrycode::countrycode(temp_country, "country.name", "iso3c")
+    values[['kp_no_data']] <- names(kp_ref_list)[!(names(kp_ref_list) %in% temp_kps)]
     #
-    updateSelectInput(session,inputId='kp',choices=kp_list)
-    values[["nav_list"]] <- setNames(append(list(c(0,0,0,0,0)),rep(list(c(0,0,0,0,0)),length(kp_list)-1)),kp_list)
-
+    updateSelectInput(session,inputId='kp',choices=names(kp_ref_list))
+    values[["nav_list"]] <- setNames(append(list(c(0,0,0,0,0)),rep(list(c(0,0,0,0,0)),length(names(kp_ref_list))-1)),names(kp_ref_list))
+    for(kp_ in values[['kp_no_data']]){
+      values[["nav_list"]][[kp_]] <- c(3,3,3,3,1)
+    }
     # Make Demography Dataframes
     values[['full_demo_df']] <- ref_pops[(ref_pops$country_id==values[['iso3']])&(ref_pops$year==year),]
 
     # Make KP and Preallocated Output Dataframes
-    dfs_to_save <- triagg:::generate_output_dataframes(df,isolate(values[['full_demo_df']]),input$upload$datapath)
+
+    dfs_to_save <- triagg:::generate_output_dataframes(isolate(uploaded_data()),isolate(values[['full_demo_df']]),temp_country,input$upload$datapath,names(kp_ref_list))
     values[['triangulator_results']] <- dfs_to_save$triangulator_results
     values[['aggregator_results']] <- dfs_to_save$aggregator_results
     values[['urb_prior_df']] <- dfs_to_save$urb_prior_df
     values[['full_demo_df']] <- dfs_to_save$full_demo_df
 
     # Last Steps
-    removeModal()
     showTab(inputId='tabs',target='KP Data Input')
-    df
   })
 
-  output$uploaded <- renderText({
-    uploaded_data()
-    " "
-  })
+  # output$uploaded <- renderText({
+  #   uploaded_data()
+  #   " "
+  # })
 
   #############
   ## SIDEBAR ##
@@ -137,9 +201,20 @@ function(input, output, session) {
       updateNumericInput(session,inputId='urb_prior_median',value=urb[urb$stat=='urb_prior_median',input$kp])
       updateNumericInput(session,inputId='urb_prior_q95',value=urb[urb$stat=='urb_prior_q95',input$kp])
       #
-      updateTabsetPanel(inputId = 'tabs',selected='KP Data Input')
-      if(values[['nav_list']][[input$kp]][1]==0){
-        values[['nav_list']][[input$kp]][1] <- 1
+      if(input$kp %in% values[['kp_no_data']]){
+        updateTabsetPanel(inputId = 'tabs',selected=tab_names[5])
+        showModal(modalDialog(
+          title='No Estimates Found',
+          align='center',
+          easyClose=FALSE,
+          footer=tagList(actionButton(inputId='compute_agg_no_pses',label='Continue to Results')),
+          'No estimates found in KP Workbook for the selected KP. Imperial College model results will be shown instead.'
+        ))
+      } else {
+        updateTabsetPanel(inputId = 'tabs',selected=tab_names[1])
+        if(values[['nav_list']][[input$kp]][1]==0){
+          values[['nav_list']][[input$kp]][1] <- 1
+        }
       }
       triagg:::showhide_tabs(values[['nav_list']][[input$kp]],tab_names)
     }
@@ -196,13 +271,13 @@ function(input, output, session) {
 
   observeEvent(values[['kp_df']],{
     if(!is.null(values[['nav_list']])){
-      if(values[['nav_list']][[input$kp]][3] > 0){
+      if(values[['nav_list']][[input$kp]][3] %in% c(1,2)){
         values[['nav_list']][[input$kp]][3] <- 1
       }
-      if(values[['nav_list']][[input$kp]][5] > 0){
+      if(values[['nav_list']][[input$kp]][5] %in% c(1,2)){
         values[['nav_list']][[input$kp]][5] <- 1
       }
-      if(values[['nav_list']][[input$kp]][1] > 0){
+      if(values[['nav_list']][[input$kp]][1] %in% c(1,2)){
         if(all(!is.na(values[['kp_df']]$confidence))){
           values[['nav_list']][[input$kp]][1] <- 2
         } else {
@@ -214,13 +289,13 @@ function(input, output, session) {
 
   observeEvent(values[['tri_priors_df']],{
     if(!is.null(values[['nav_list']])){
-      if(values[['nav_list']][[input$kp]][3] > 0){
+      if(values[['nav_list']][[input$kp]][3] %in% c(1,2)){
         values[['nav_list']][[input$kp]][3] <- 1
       }
-      if(values[['nav_list']][[input$kp]][5] > 0){
+      if(values[['nav_list']][[input$kp]][5] %in% c(1,2)){
         values[['nav_list']][[input$kp]][5] <- 1
       }
-      if(values[['nav_list']][[input$kp]][2] > 0){
+      if(values[['nav_list']][[input$kp]][2] %in% c(1,2)){
         if(all(!is.na(values[['tri_priors_df']]))){
           values[['nav_list']][[input$kp]][2] <- 2
         } else {
@@ -232,10 +307,10 @@ function(input, output, session) {
 
   observeEvent(c(values[['demo_df']],input$urb_prior_median,input$urb_prior_q95),{
     if(!is.null(values[['nav_list']])){
-      if(values[['nav_list']][[input$kp]][5] > 0){
+      if(values[['nav_list']][[input$kp]][5] %in% c(1,2)){
         values[['nav_list']][[input$kp]][5] <- 1
       }
-      if(values[['nav_list']][[input$kp]][4] > 0){
+      if(values[['nav_list']][[input$kp]][4] %in% c(1,2)){
         if(all(all(!is.na(values[['tri_priors_df']]),!is.na(input$urb_prior_median),!is.na(input$urb_prior_q95)))){
           values[['nav_list']][[input$kp]][4] <- 2
         } else {
@@ -320,26 +395,28 @@ function(input, output, session) {
   output$kp_data_hot <- renderRHandsontable({
     kp_df <- values[["kp_df"]]
     if (!is.null(kp_df)){
-      kp_df$display_prop <- paste0(round(100*kp_df$proportion_estimate,3),'%')
-      kp_df$display_CI <- ifelse(is.na(kp_df$proportion_lower)&is.na(kp_df$proportion_upper),'',paste0('(',round(100*kp_df$proportion_lower,3),'%, ',round(100*kp_df$proportion_upper,3),'%)'))
-      # rHandsontable (vexingly) rounds all entries to 1e-4 when it processes the table, so we'll have to multiply the raw (undisplayed) data, then convert back after hot_to_r does its job above
-      kp_df <- kp_df %>% mutate(proportion_estimate = 1000*proportion_estimate,
-                                proportion_lower = 1000*proportion_lower,
-                                proportion_upper = 1000*proportion_upper)
-      kp_df <- kp_df[,c(1:11,14:15,12:13)]
-      colnames(kp_df)[c(3:8,12:13,15)] <- c('Study ID','Observation ID','Method','Year','Area Name','Province','Proportion Estimate','Uncertainty Interval','Study Confidence')
-      rownames(kp_df) <- 1:nrow(kp_df)
-      rhandsontable(
-        kp_df,
-        useTypes = TRUE,
-        readOnly = TRUE
-      ) %>%
-        hot_rows(rowHeights = 25) %>% # Force default row heights, since overfull cells in 'hidden' columns can cause the display to change
-        hot_cols(columnSorting=TRUE) %>%
-        hot_col('Study Confidence',readOnly = FALSE) %>%
-        hot_validate_numeric(cols=c('Study Confidence'),min=0,max=100)%>%
-        hot_col('Proportion Estimate',format='0.000%') %>%
-        hot_col(c('country','kp','proportion_estimate','proportion_lower','proportion_upper','Province','SE_interpolated'),colWidths=0.1) #,'province'
+      if(nrow(kp_df) > 0){
+        kp_df$display_prop <- paste0(round(100*kp_df$proportion_estimate,3),'%')
+        kp_df$display_CI <- ifelse(is.na(kp_df$proportion_lower)&is.na(kp_df$proportion_upper),'',paste0('(',round(100*kp_df$proportion_lower,3),'%, ',round(100*kp_df$proportion_upper,3),'%)'))
+        # rHandsontable (vexingly) rounds all entries to 1e-4 when it processes the table, so we'll have to multiply the raw (undisplayed) data, then convert back after hot_to_r does its job above
+        kp_df <- kp_df %>% mutate(proportion_estimate = 1000*proportion_estimate,
+                                  proportion_lower = 1000*proportion_lower,
+                                  proportion_upper = 1000*proportion_upper)
+        kp_df <- kp_df[,c(1:11,14:15,12:13)]
+        colnames(kp_df)[c(3:8,12:13,15)] <- c('Study ID','Observation ID','Method','Year','Area Name','Province','Proportion Estimate','Uncertainty Interval','Study Confidence')
+        rownames(kp_df) <- 1:nrow(kp_df)
+        rhandsontable(
+          kp_df,
+          useTypes = TRUE,
+          readOnly = TRUE
+        ) %>%
+          hot_rows(rowHeights = 25) %>% # Force default row heights, since overfull cells in 'hidden' columns can cause the display to change
+          hot_cols(columnSorting=TRUE) %>%
+          hot_col('Study Confidence',readOnly = FALSE) %>%
+          hot_validate_numeric(cols=c('Study Confidence'),min=0,max=100)%>%
+          hot_col('Proportion Estimate',format='0.000%') %>%
+          hot_col(c('country','kp','proportion_estimate','proportion_lower','proportion_upper','Province','SE_interpolated'),colWidths=0.1) #,'province'
+      }
     }
   })
 
@@ -391,7 +468,7 @@ function(input, output, session) {
     }
     values[["tri_priors_df"]] <- tri_priors_df
     #
-    updateActionButton(session,inputId='run_tri',disabled=!all(!sapply(tri_priors_df,is.na)))
+    updateActionButton(session,inputId='run_tri',disabled=ifelse(nrow(tri_priors_df)==0,TRUE,!all(!sapply(tri_priors_df,is.na))))
     #
     tri_prior_select_prev <- isolate(input$tri_prior_plot_select)
     if(length(tri_priors_plot_options)==0){
@@ -411,19 +488,21 @@ function(input, output, session) {
   output$tri_priors_hot <- renderRHandsontable({
     tri_priors_df <- values[['tri_priors_df']]
     if (!is.null(tri_priors_df)){
-      rownames(tri_priors_df) <- 1:nrow(tri_priors_df)
-      colnames(tri_priors_df) <- c('Province','Expected Value - Median (%)','Expected Value - 75th Percentile (%)')
-      tri_priors_df[,c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)')] <- 100*tri_priors_df[,c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)')]
-      rhandsontable(
-        tri_priors_df,
-        useTypes = TRUE,
-        readOnly = FALSE,
-      ) %>%
-        hot_col('Province',readOnly = TRUE)%>%
-        hot_validate_numeric(cols=c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)'),min=0.0,max=100.0)%>%
-        hot_col('Expected Value - Median (%)',format='0.0')%>%
-        hot_col('Expected Value - 75th Percentile (%)',format='0.0') %>%
-        hot_cols(colWidths = 150)
+      if(nrow(tri_priors_df) > 0 ){
+        rownames(tri_priors_df) <- 1:nrow(tri_priors_df)
+        colnames(tri_priors_df) <- c('Province','Expected Value - Median (%)','Expected Value - 75th Percentile (%)')
+        tri_priors_df[,c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)')] <- 100*tri_priors_df[,c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)')]
+        rhandsontable(
+          tri_priors_df,
+          useTypes = TRUE,
+          readOnly = FALSE,
+        ) %>%
+          hot_col('Province',readOnly = TRUE)%>%
+          hot_validate_numeric(cols=c('Expected Value - Median (%)','Expected Value - 75th Percentile (%)'),min=0.0,max=100.0)%>%
+          hot_col('Expected Value - Median (%)',format='0.0')%>%
+          hot_col('Expected Value - 75th Percentile (%)',format='0.0') %>%
+          hot_cols(colWidths = 150)
+        }
     } else {
       NULL
     }
@@ -636,6 +715,7 @@ function(input, output, session) {
     For the current key population, there are fewer than three population size estimates that can be used to inform the
     national aggregate estimate.
     </br>
+    </br>
     In this case, we recommend using the estimates produced by the Imperial College model, which will be displayed on the next page.
     </div>'})
 
@@ -644,54 +724,69 @@ function(input, output, session) {
     For the current key population, there are only estimates from a single province. The aggregator model requires data from two or
     more provinces.
     </br>
+    </br>
     In this case, we recommend using the estimates produced by the Imperial College model, which will be displayed on the next page.
     </div>'})
 
+  observeEvent(input$compute_agg_no_pses,{
+    values[['run_agg']] <- TRUE
+    removeModal()
+  })
+
   observeEvent(input$run_agg,{
-    if(is.null(values[["tri_consensus_output"]]))
-      return(NULL)
-    kp_df <- isolate(values[['kp_df']])
-    demo_df <- isolate(values[["demo_df"]])
-    country <- isolate(values[['country']])
-    iso3 <- countrycode::codelist$iso3c[countrycode::codelist$country.name.en==country]
-    if((nrow(kp_df) < 3)|(length(unique(kp_df$province)) < 2)){
-      if(nrow(kp_df) < 3){
-        text <- 'min_data_warning_text_n_obs'
-      } else if(length(unique(kp_df$province)) < 2){
-        text <- 'min_data_warning_text_n_prov'
+    values[['run_agg']] <- TRUE
+  })
+
+  observeEvent(values[['run_agg']],{
+    if(values[['run_agg']]==TRUE){
+      kp_df <- isolate(values[['kp_df']])
+      demo_df <- isolate(values[["demo_df"]])
+      country_ <- isolate(values[['country']])
+      iso3_ <- isolate(values[['iso3']])
+      if((nrow(kp_df) < 3)||(length(unique(kp_df$province)) < 2)){
+        if(nrow(kp_df) < 3){
+          text <- 'min_data_warning_text_n_obs'
+        } else if(length(unique(kp_df$province)) < 2){
+          text <- 'min_data_warning_text_n_prov'
+        }
+        showModal(modalDialog(
+          title='Alert - Minimum Data Requirements Not Met',
+          easyClose=FALSE,
+          footer=modalButton('Continue'),
+          size='l',
+          htmlOutput(text)
+        ))
+        model_results <- natl_pse_priors %>% filter(iso3==iso3_,kp==input$kp)
+        agg_out <- data.frame(country=country_,kp = input$kp,province='National',level='National',urb='Total',
+                              proportion_estimate = model_results$median, proportion_lower = model_results$lower,proportion_upper=model_results$upper,
+                              has_ests=2,prop_of_nat_pop=1.0,urban_proportion=weighted.mean(demo_df$urban_proportion,demo_df$pop),pop=sum(demo_df$pop))
+        agg_out[,c('count_estimate','count_lower','count_upper')] <- agg_out[,c('proportion_estimate','proportion_lower','proportion_upper')]*agg_out$pop
+        agg_out$source <- 'collation'
+        updateSelectInput(session,'agg_display_select',choices=c('Total'))
+      } else {
+        showModal(modalDialog(title=NULL,align='center',tags$h3('Running Aggregator'),footer=NULL,size='l',easyClose = FALSE))
+        #
+        parameter_priors <- list(alpha=log(input$urb_prior_median),gamma=((log(input$urb_prior_q95)-log(input$urb_prior_median))/qnorm(0.975)),t=values[['t_value']])
+        agg_out <- triagg:::run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors,
+                                           input$imperial_prior,iso3_,input$kp)
+        updateSelectInput(session,'agg_display_select',choices=c('Total','Urban','Rural'))
+        removeModal()
       }
-      showModal(modalDialog(
-        title='Alert - Minimum Data Requirements Not Met',
-        align = 'center',
-        easyClose=FALSE,
-        size='l',
-        textOutput(text)
-      ))
-      model_results <- natl_pse_priors %>% filter(iso3==iso3,kp==input$kp)
-      agg_out <- data.frame(country=country,kp = input$kp,province='National',level='National',urb='Total',
-                            proportion_estimate = model_results$median, proportion_lower = model_results$lower,proportion_upper=model_results$upper,
-                            has_ests=2,prop_of_nat_pop=1.0,urban_proportion=weighted.mean(demo_df$urban_proportion,demo_df$pop),pop=sum(demo_df$pop))
-      agg_out[,c('count_estimate','count_lower','count_upper')] <- agg_out[,c('proportion_estimate','proportion_lower','proportion_upper')]*agg_out$pop
-      agg_out$source <- 'collation'
-    } else {
-      showModal(modalDialog(title=NULL,align='center',tags$h3('Running Aggregator'),footer=NULL,size='l',easyClose = FALSE))
       #
-      parameter_priors <- list(alpha=log(input$urb_prior_median),gamma=((log(input$urb_prior_q95)-log(input$urb_prior_median))/qnorm(0.975)),t=values[['t_value']])
-      agg_out <- triagg:::run_aggregator(isolate(values[["tri_consensus_output"]]),demo_df,parameter_priors,
-                                         input$imperial_prior,iso3,input$kp)
-      removeModal()
+      values[['aggregator_output']] <- agg_out
+      values[['aggregator_results']] <- rows_update(values[['aggregator_results']],agg_out,by=c('country','kp','level','urb','province'))
+      values[['urb_prior_df']][,input$kp] <- c(input$urb_prior_median,input$urb_prior_q95)
+      #
+      demo_df$sex <- kp_ref_list[[input$kp]]
+      demo_cols <- c('province','year','sex','pop','urban_proportion')
+      values[['full_demo_df']][,demo_cols] <- values[['full_demo_df']][,demo_cols] %>%
+        rows_update(demo_df[,demo_cols],by=c('province','year','sex'))
+      values[['nav_list']][[input$kp]][5] <- 2
+      updateTabsetPanel(inputId='tabs',selected='Aggregator Outputs')
+      values[['run_agg']] <- FALSE
+    } else {
+      NULL
     }
-    #
-    values[['aggregator_output']] <- agg_out
-    values[['aggregator_results']] <- rows_update(values[['aggregator_results']],agg_out,by=c('country','kp','level','urb','province'))
-    values[['urb_prior_df']][,input$kp] <- c(input$urb_prior_median,input$urb_prior_q95)
-    #
-    demo_df$sex <- kp_ref_list[[input$kp]]
-    demo_cols <- c('province','year','sex','pop','urban_proportion')
-    values[['full_demo_df']][,demo_cols] <- values[['full_demo_df']][,demo_cols] %>%
-      rows_update(demo_df[,demo_cols],by=c('province','year','sex'))
-    values[['nav_list']][[input$kp]][5] <- 2
-    updateTabsetPanel(inputId='tabs',selected='Aggregator Outputs')
   })
 
   ######################
@@ -729,11 +824,12 @@ function(input, output, session) {
   # Aggregator Output Plot
 
   output$agg_out_plot <- renderPlot({
-    if(!is.null(values[['aggregator_output']]))
+    if(!is.null(values[['aggregator_output']])){
       triagg:::plot_aggregator_forest(isolate(values[['aggregator_output']]),input$agg_out_scale,input$agg_display_select)
-  },
-  width = 500,
-  height = function() {nrow(values[['aggregator_output']])*8})
+      }
+    },
+    width = 500,
+    height = function() {ifelse(is.null(values[['aggregator_output']]),1,max(30,nrow(values[['aggregator_output']]))*8)})
 
   ######################
   # >>> NEXT KP BUTTON

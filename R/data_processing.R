@@ -13,71 +13,93 @@ process_kp_workbook <- function(df,lang){
 
   interp_stat <- 'q75'
 
-  colnames(df) <- c('country', "indicator", 'method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx', "method_rating", "method_issue", "validation_issue")
+  empty_df <- data.frame(country=character(),
+                           kp=character(),
+                           study_idx=character(),
+                           observation_idx=character(),
+                           method=character(),
+                           year=character(),
+                           area_name=character(),
+                           province=character(),
+                           proportion_estimate=numeric(),
+                           proportion_lower=numeric(),
+                           proportion_upper=numeric(),
+                           SE_interpolated=numeric(),
+                           confidence=numeric())
 
-  if(lang == "English") {
-    df <- df %>%
-      filter(indicator == "Population size estimate",
-             method_issue == "Include",
-             validation_issue == "Include",
-             method_rating == "Empirical method") %>%
-      select(-indicator)
+  if(!is.null(df)){
 
+    colnames(df) <- c('country', "indicator", 'method','kp','area_name','province','year','count_estimate','proportion_lower','proportion_estimate','proportion_upper','study_idx','observation_idx', "method_rating", "method_issue", "validation_issue")
+
+    if(lang == "English") {
+      df <- df %>%
+        filter(indicator == "Population size estimate",
+               method_issue == "Include",
+               validation_issue == "Include",
+               method_rating == "Empirical method") %>%
+        select(-indicator)
+
+    } else {
+      df <- df %>%
+        filter(indicator == "Estimation de la taille de la population",
+               method_issue == "Inclure",
+               validation_issue == "Inclure",
+               method_rating == "Méthode empirique") %>%
+        select(-indicator) %>%
+        mutate(kp = recode(kp,
+                           'HSH'='MSM',
+                           'PS'='FSW',
+                           'TGF'='TGW',
+                           'CDI'='PWID'
+                           ),
+               method = recode(method,
+                               'Multiplicateur d\'objets/événements' = 'Object multiplier',
+                               "Multiplicateur de service" = "Service multiplier",
+                               "Plusieurs méthodes - empirique" = "Multiple methods - empirical",
+                               "Plusieurs méthodes - non empirique" = "Multiple methods - non-empirical"
+                               )
+               )
+    }
+    if(nrow(df)==0){
+      df <- empty_df
+    } else {
+      df <- df %>% mutate_at(vars('year','study_idx','observation_idx'),as.character) %>% mutate_at(vars('proportion_estimate','proportion_lower','proportion_upper'),function(x){suppressWarnings(as.numeric(x))})
+
+      # Deal with SE interpolation
+      df$SE_interpolated <- ifelse(is.na(df$proportion_lower)&is.na(df$proportion_upper),TRUE,
+                                   ifelse(df$proportion_lower==df$proportion_upper,TRUE,FALSE))
+      df <- merge(df,logit_SE_interpolation[,c('method','kp',interp_stat)],by=c('method','kp'),all.x=TRUE)
+      df$proportion_lower[df$SE_interpolated] <- expit(logit(df$proportion_estimate[df$SE_interpolated])-1.96*df[df$SE_interpolated,interp_stat])
+      df$proportion_upper[df$SE_interpolated] <- expit(logit(df$proportion_estimate[df$SE_interpolated])+1.96*df[df$SE_interpolated,interp_stat])
+      df <- df[,!(colnames(df) %in% c(interp_stat))]
+
+      # Convert count_estimate to integer
+      #df$count_estimate <- as.integer(df$count_estimate)
+
+      # Reorder, drop count?
+      df <- select(df, country, kp, study_idx, observation_idx, method, year, area_name, province, proportion_estimate, proportion_lower, proportion_upper, SE_interpolated)
+      df$confidence <- as.integer(NA)
+    }
   } else {
-    df <- df %>%
-      filter(indicator == "Estimation de la taille de la population",
-             method_issue == "Inclure",
-             validation_issue == "Inclure",
-             method_rating == "Méthode empirique") %>%
-      select(-indicator) %>%
-      mutate(kp = recode(kp,
-                         'HSH'='MSM',
-                         'PS'='FSW',
-                         'TGF'='TGW',
-                         'CDI'='PWID'
-                         ),
-             method = recode(method,
-                             'Multiplicateur d\'objets/événements' = 'Object multiplier',
-                             "Multiplicateur de service" = "Service multiplier",
-                             "Plusieurs méthodes - empirique" = "Multiple methods - empirical",
-                             "Plusieurs méthodes - non empirique" = "Multiple methods - non-empirical"
-                             )
-             )
+    df <- empty_df
   }
-
-  df <- df %>% mutate_at(vars('year','study_idx','observation_idx'),as.character) %>% mutate_at(vars('proportion_estimate','proportion_lower','proportion_upper'),function(x){suppressWarnings(as.numeric(x))})
-
-  # Deal with SE interpolation
-  df$SE_interpolated <- ifelse(is.na(df$proportion_lower)&is.na(df$proportion_upper),TRUE,
-                               ifelse(df$proportion_lower==df$proportion_upper,TRUE,FALSE))
-  df <- merge(df,logit_SE_interpolation[,c('method','kp',interp_stat)],by=c('method','kp'),all.x=TRUE)
-  df$proportion_lower[df$SE_interpolated] <- expit(logit(df$proportion_estimate[df$SE_interpolated])-1.96*df[df$SE_interpolated,interp_stat])
-  df$proportion_upper[df$SE_interpolated] <- expit(logit(df$proportion_estimate[df$SE_interpolated])+1.96*df[df$SE_interpolated,interp_stat])
-  df <- df[,!(colnames(df) %in% c(interp_stat))]
-
-  # Convert count_estimate to integer
-  #df$count_estimate <- as.integer(df$count_estimate)
-
-  # Reorder, drop count?
-  # df <- df[,c(3,2,11:12,1,6,4:5,9,8,10,13)] #c(11,12,1:10,13,14)]
-  df <- select(df, country, kp, study_idx, observation_idx, method, year, area_name, province, proportion_estimate, proportion_lower, proportion_upper, SE_interpolated)
-
   return(df)
 }
 
-generate_output_dataframes <- function(full_kp_df,full_demo_df,filename){
-
-  country <- unique(full_kp_df$country)
-  kps <- unique(full_kp_df$kp)
+generate_output_dataframes <- function(full_kp_df,full_demo_df,country,filename,kps){
+  #country <- unique(full_kp_df$country)
+  #kps <- unique(full_kp_df$kp)
 
   tri_full_out <- full_kp_df
 
   agg_list <- list()
 
   for(kp in kps){
-    tri_full_out <- bind_rows(tri_full_out,
-                              data.frame('country'=country,'kp'=kp,'method'='Prior','province'=sort(unique(full_kp_df$province[full_kp_df$kp==kp]))),
-                              data.frame('country'=country,'kp'=kp,'method'='Consensus','province'=sort(unique(full_kp_df$province[full_kp_df$kp==kp]))))
+    if(length(unique(full_kp_df$province[full_kp_df$kp==kp])) > 0){
+      tri_full_out <- bind_rows(tri_full_out,
+                                data.frame('country'=country,'kp'=kp,'method'='Prior','province'=sort(unique(full_kp_df$province[full_kp_df$kp==kp]))),
+                                data.frame('country'=country,'kp'=kp,'method'='Consensus','province'=sort(unique(full_kp_df$province[full_kp_df$kp==kp]))))
+    }
     agg_list[[length(agg_list)+1]] <- data.frame('country'=country,'kp'=kp,'level'='Province','urb'=rep(c('Urban','Rural','Total'),length(unique(full_demo_df$province))),'province'=rep(unique(full_demo_df$province),rep(3,length(unique(full_demo_df$province)))))
     agg_list[[length(agg_list)+1]] <- data.frame('country'=country,'kp'=kp,'level'='National','urb'=c('Urban','Rural','Total'),'province'='National')
   }
@@ -162,9 +184,12 @@ write_triangulator_inputs <- function(kp_df,tri_priors_df){
   # Add prior rows to the kp_df, subsetted for output columns
   kp_out_cols <- c('country','kp','study_idx','observation_idx','method','year','area_name','province','proportion_estimate','proportion_lower','proportion_upper','confidence','SE_interpolated') #'conf_lower','conf_upper',
   prior_df <- do.call('rbind.data.frame',prior_rows)
-  colnames(prior_df) <- kp_out_cols
-
-  full_df <- bind_rows(kp_df[,kp_out_cols],prior_df)
+  if(nrow(prior_df)>0){
+    colnames(prior_df) <- kp_out_cols
+    full_df <- bind_rows(kp_df[,kp_out_cols],prior_df)
+  } else {
+    full_df <- kp_df
+  }
 
   return(full_df)
 }
